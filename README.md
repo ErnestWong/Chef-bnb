@@ -63,4 +63,6 @@ TEST_DATABASE_URL=postgresql://... pnpm test
 - [x] M0 — scaffold, `pnpm verify`, CI, `/api/health`, placeholder landing page
 - [x] M1 — schema, migration with DB constraints, seed, booking rules + row-lock concurrency test
 - [x] M2 — auth and roles (placeholder email sign-in; Google OAuth swap pending checklist item 4)
-- [ ] M3–M9 — see the implementation guide
+- [x] Public site + brand pass #1 — landing, `/events` list + calendar with filters, event pages, `/chefs` directory, chef profiles with anonymous reviews (M5 discovery + M3's public profile, built ahead of the chef intake and booking flows)
+- [ ] M3 chef intake / M4 event creation / M6 booking flow — the interactive frontend, next
+- [ ] M7–M9 — see the implementation guide

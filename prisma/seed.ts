@@ -221,6 +221,7 @@ async function main() {
 
   const chefIds: string[] = [];
   const venueIds: string[] = [];
+  const menuIds: string[] = [];
   for (const c of chefs) {
     const user = await db.user.create({
       data: { email: c.email, name: c.name, roles: ["GUEST", "CHEF"], emailVerified: new Date() },
@@ -254,18 +255,19 @@ async function main() {
       },
     });
     venueIds.push(venue.id);
-    await db.menu.create({
+    const menu = await db.menu.create({
       data: {
         chefId: profile.id,
         title: `${c.name} sample menu`,
         isSample: true,
         courses: [
           { name: "Welcome bites", description: "Something small while everyone arrives" },
-          { name: "Family-style mains", description: c.cuisines.join(" / ") },
+          { name: "Family-style mains", description: c.cuisines.join(" / "), dietary: "Vegetarian option on request" },
           { name: "Dessert", description: "Seasonal" },
         ],
       },
     });
+    menuIds.push(menu.id);
   }
 
   // Two applicants still in the queue, one rejected
@@ -304,6 +306,8 @@ async function main() {
       data: {
         chefId: chefIds[e.chef],
         venueId: venueIds[e.chef],
+        // Every other event has its menu posted; the rest show the "closer to the date" note.
+        menuId: i % 2 === 0 ? menuIds[e.chef] : null,
         title: e.title,
         description: `${chef.bio.split(".")[0]}. Bring your own bottle.`,
         startsAt,

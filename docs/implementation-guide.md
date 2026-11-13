@@ -135,6 +135,7 @@ In dependency order. Items 1–4 unblock the agent entirely for the first two mi
 - Chef directory `/chefs` with cuisine filter
 - Brand pass #1: 🧑 Ernest picks name + accent color (checklist item 8); agent applies a simple warm theme — no heavy design yet
 - _Done when:_ seeded events are browsable and filterable on the preview; exact address appears nowhere in page source. 🧑 Item 6.
+- _Status (2026-11-13):_ built ahead of M3/M4 at Ernest's request (public site first). List + calendar views, all six filters, event page, chef directory and profiles, brand pass #1 (Fraunces display + Geist, one warm accent, light/dark). Verified locally: no private column in any public page. Map shows neighborhood text until the Mapbox token exists (item 6); the "Request seats" button leads to a placeholder until M6.
 
 ### M6 — Booking (the hard one)
 
