@@ -21,6 +21,7 @@ export type EventFormValues = {
   minGuests: number;
   maxGuests: number;
   allowedBookingTypes: string[];
+  cuisineIds: string[];
   dietaryNotes: string;
   byobNote: string;
   venueId: string;
@@ -29,7 +30,7 @@ export type EventFormValues = {
   locked?: boolean;
 };
 
-export function EventForm({ venues, menus, values }: { venues: EventFormVenue[]; menus: EventFormMenu[]; values: EventFormValues }) {
+export function EventForm({ venues, menus, cuisines, values }: { cuisines: { id: string; name: string }[]; venues: EventFormVenue[]; menus: EventFormMenu[]; values: EventFormValues }) {
   const [state, action, pending] = useActionState<FormResult | null, FormData>(saveEventAction, null);
   const f = state && !state.ok ? state.fields ?? {} : {};
   const [venueId, setVenueId] = useState(values.venueId || (venues[0]?.id ?? ""));
@@ -66,13 +67,26 @@ export function EventForm({ venues, menus, values }: { venues: EventFormVenue[];
         <Field label="Price per seat ($)" error={f.priceDollars}>
           <input name="priceDollars" type="number" min={0} max={1000} step={1} defaultValue={values.priceDollars} required readOnly={locked} className={fieldClass} />
         </Field>
-        <Field label="Minimum guests" hint="Below this at the cutoff, the dinner is cancelled." error={f.minGuests}>
-          <input name="minGuests" type="number" min={1} max={RULES.MAX_GUESTS} defaultValue={values.minGuests} required className={fieldClass} />
+        <Field label="Minimum guests" hint="Review confirmed headcount before deciding whether to run the dinner." error={f.minGuests}>
+          <input name="minGuests" type="number" min={1} max={RULES.MAX_GUESTS} defaultValue={values.minGuests} required readOnly={locked} className={fieldClass} />
         </Field>
         <Field label={`Maximum guests (≤ ${RULES.MAX_GUESTS})`} error={f.maxGuests}>
           <input name="maxGuests" type="number" min={1} max={RULES.MAX_GUESTS} defaultValue={values.maxGuests} required readOnly={locked} className={fieldClass} />
         </Field>
       </div>
+
+      <fieldset className="flex flex-col gap-2">
+        <legend className="mb-1 text-sm font-medium">Cuisines (up to 4)</legend>
+        <div className="flex flex-wrap gap-3 text-sm">
+          {cuisines.map((c) => (
+            <label key={c.id} className="flex items-center gap-2">
+              <input type="checkbox" name="cuisineIds" value={c.id} defaultChecked={values.cuisineIds.includes(c.id)} className="accent-accent" />
+              {c.name}
+            </label>
+          ))}
+        </div>
+        {f.cuisineIds && <span role="alert" className="text-xs text-red-700 dark:text-red-300">{f.cuisineIds}</span>}
+      </fieldset>
 
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-1 text-sm font-medium">Ways to book</legend>
@@ -93,7 +107,7 @@ export function EventForm({ venues, menus, values }: { venues: EventFormVenue[];
 
       <section className="rounded-2xl border border-line p-4">
         <p className="text-sm font-medium">Where</p>
-        <p className="mt-1 text-xs text-muted">Guests see the neighborhood and cross streets only. The address goes out by email 48 h before.</p>
+        <p className="mt-1 text-xs text-muted">Guests see the neighborhood and cross streets only. Automated address delivery is not available yet.</p>
         <div className="mt-3">
           <Field label="Venue" error={f.venueId}>
             <select name="venueId" value={venueId} onChange={(e) => setVenueId(e.target.value)} className={fieldClass}>
@@ -199,7 +213,7 @@ export function EventStatusButton({ eventId, to, label, variant = "secondary", c
     >
       <input type="hidden" name="eventId" value={eventId} />
       <input type="hidden" name="to" value={to} />
-      {withReason && <input name="reason" placeholder="Reason (sent to guests)" maxLength={300} className={`${fieldClass} w-64`} />}
+      {withReason && <input name="reason" placeholder="Cancellation reason" maxLength={300} className={`${fieldClass} w-64`} />}
       <button type="submit" disabled={pending} className={`rounded-full px-3 py-1.5 text-xs font-medium disabled:opacity-50 ${styles}`}>
         {pending ? "…" : label}
       </button>

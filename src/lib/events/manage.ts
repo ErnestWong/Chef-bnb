@@ -53,6 +53,7 @@ export const eventSchema = z
     minGuests: z.coerce.number().int().min(1).max(RULES.MAX_GUESTS),
     maxGuests: z.coerce.number().int().min(1).max(RULES.MAX_GUESTS, `At most ${RULES.MAX_GUESTS} guests per dinner.`),
     allowedBookingTypes: z.array(z.enum(["SEAT", "GROUP", "BUYOUT"])).min(1, "Allow at least one way to book."),
+    cuisineIds: z.array(z.string().min(1)).min(1, "Pick at least one cuisine.").max(4),
     dietaryNotes: z.string().trim().max(500).optional(),
     byobNote: z.string().trim().max(200).optional(),
     // Venue: an existing one the chef owns, or a new one.
@@ -91,7 +92,7 @@ export function parseCourses(text: string | undefined): { name: string; descript
 }
 
 export class EventError extends Error {
-  constructor(public readonly code: "not_chef" | "venue_not_yours" | "menu_not_yours" | "in_past" | "not_found" | "locked") {
+  constructor(public readonly code: "not_chef" | "venue_not_yours" | "menu_not_yours" | "in_past" | "not_found" | "locked" | "closed") {
     super(
       {
         not_chef: "Only approved chefs can create dinners.",
@@ -100,6 +101,7 @@ export class EventError extends Error {
         in_past: "The dinner has to start in the future.",
         not_found: "Dinner not found.",
         locked: "This dinner already has bookings; the date, price and capacity can't change.",
+        closed: "Cancelled or completed dinners can't be edited or reopened.",
       }[code],
     );
   }
@@ -114,6 +116,8 @@ export async function saveEvent(db: Db, userId: string, input: EventInput, event
   if (startsAt <= now) throw new EventError("in_past");
 
   return db.$transaction(async (tx) => {
+    // Share the booking lock before reading occupancy or changing the event.
+    if (eventId) await tx.$queryRaw`SELECT id FROM events WHERE id = ${eventId} FOR UPDATE`;
     let venueId = input.venueId || null;
     let borough: Borough;
     if (venueId) {
@@ -166,35 +170,42 @@ export async function saveEvent(db: Db, userId: string, input: EventInput, event
       dietaryNotes: input.dietaryNotes || null,
       byobNote: input.byobNote || null,
       byob: true,
+      cuisines: { set: input.cuisineIds.map((id) => ({ id })) },
     };
 
     if (eventId) {
       const existing = await tx.event.findFirst({
         where: { id: eventId, chefId: chef.id },
-        select: { id: true, status: true, startsAt: true, priceCents: true, maxGuests: true, _count: { select: { bookings: { where: { status: { in: ["REQUESTED", "CONFIRMED"] } } } } } },
+        select: { id: true, status: true, startsAt: true, priceCents: true, minGuests: true, maxGuests: true, _count: { select: { bookings: { where: { status: { in: ["REQUESTED", "CONFIRMED"] } } } } } },
       });
       if (!existing) throw new EventError("not_found");
+      if (existing.status === "CANCELLED" || existing.status === "COMPLETED") throw new EventError("closed");
       const booked = existing._count.bookings > 0;
-      if (booked && (existing.startsAt.getTime() !== startsAt.getTime() || existing.priceCents !== data.priceCents || existing.maxGuests !== data.maxGuests)) {
+      if (booked && (existing.startsAt.getTime() !== startsAt.getTime() || existing.priceCents !== data.priceCents || existing.minGuests !== data.minGuests || existing.maxGuests !== data.maxGuests)) {
         throw new EventError("locked");
       }
       const status = input.intent === "publish" ? "PUBLISHED" : existing.status === "PUBLISHED" ? "PUBLISHED" : "DRAFT";
       return tx.event.update({ where: { id: eventId }, data: { ...data, status } });
     }
-    return tx.event.create({ data: { ...data, chefId: chef.id, status: input.intent === "publish" ? "PUBLISHED" : "DRAFT" } });
+    return tx.event.create({ data: { ...data, cuisines: { connect: input.cuisineIds.map((id) => ({ id })) }, chefId: chef.id, status: input.intent === "publish" ? "PUBLISHED" : "DRAFT" } });
   });
 }
 
 export type EventStatusChange = "PUBLISHED" | "DRAFT" | "CANCELLED";
 
 /** Publish / unpublish / cancel. Unpublishing is only allowed with no active bookings. */
-export async function setEventStatus(db: Db, userId: string, eventId: string, to: EventStatusChange, reason?: string) {
+export async function setEventStatus(db: Db, userId: string, eventId: string, to: EventStatusChange, reason?: string, now = new Date()) {
   return db.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM events WHERE id = ${eventId} FOR UPDATE`;
     const event = await tx.event.findFirst({
       where: { id: eventId, chef: { userId } },
-      select: { id: true, status: true, _count: { select: { bookings: { where: { status: { in: ["REQUESTED", "CONFIRMED"] } } } } } },
+      select: { id: true, status: true, startsAt: true, chef: { select: { status: true } }, _count: { select: { bookings: { where: { status: { in: ["REQUESTED", "CONFIRMED"] } } } } } },
     });
     if (!event) throw new EventError("not_found");
+    if (event.status === to) return event;
+    if (event.status === "CANCELLED" || event.status === "COMPLETED") throw new EventError("closed");
+    if (event.startsAt <= now) throw new EventError("in_past");
+    if (to === "PUBLISHED" && event.chef.status !== "APPROVED") throw new EventError("not_chef");
     if (to === "DRAFT" && event._count.bookings > 0) throw new EventError("locked");
     if (to === "CANCELLED") {
       // Cancel every active booking too; the chef refunds offline. Logged as system/chef action.

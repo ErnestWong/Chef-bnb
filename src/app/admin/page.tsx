@@ -49,7 +49,7 @@ async function AdminOverview() {
           Review chef applications{pendingChefs > 0 ? ` (${pendingChefs})` : ""}
         </Link>
       </div>
-      <p className="mt-6 text-sm text-muted">Event moderation and booking tools arrive with M7.</p>
+      <p className="mt-6 text-sm text-muted">Event moderation and booking tools are not available here yet.</p>
     </>
   );
 }

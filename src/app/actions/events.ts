@@ -28,6 +28,7 @@ export async function saveEventAction(_prev: FormResult | null, formData: FormDa
     const v = formData.get(key);
     raw[key] = v === null || v === "" ? undefined : v;
   }
+  raw.cuisineIds = formData.getAll("cuisineIds").map(String);
   raw.allowedBookingTypes = formData.getAll("allowedBookingTypes").map(String);
   if (raw.venueBorough === undefined) raw.venueBorough = "";
   const parsed = eventSchema.safeParse(raw);

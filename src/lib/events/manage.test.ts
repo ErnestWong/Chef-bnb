@@ -37,6 +37,7 @@ describe("eventSchema", () => {
     maxGuests: "10",
     allowedBookingTypes: ["SEAT", "GROUP"],
     venueId: "v1",
+    cuisineIds: ["c1"],
   };
 
   it("accepts a valid event with an existing venue", () => {
@@ -57,6 +58,11 @@ describe("eventSchema", () => {
     expect(
       eventSchema.safeParse({ ...noVenue, venueAddress: "12 Orchard St, Apt 3", venueNeighborhood: "Lower East Side", venueBorough: "MANHATTAN", venueCrossStreets: "Orchard & Rivington" }).success,
     ).toBe(true);
+  });
+
+  it("requires one to four cuisine tags", () => {
+    expect(eventSchema.safeParse({ ...valid, cuisineIds: [] }).success).toBe(false);
+    expect(eventSchema.safeParse({ ...valid, cuisineIds: ["1", "2", "3", "4", "5"] }).success).toBe(false);
   });
 
   it("requires at least one booking type", () => {

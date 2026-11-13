@@ -5,7 +5,7 @@ import { EventForm } from "@/components/event-form";
 import { Container } from "@/components/ui";
 import { requireRole } from "@/lib/auth/session";
 import { getDb } from "@/lib/db";
-import { RULES } from "@/lib/bookings/rules";
+import { listCuisines } from "@/lib/queries/events";
 
 export const metadata: Metadata = { title: "New dinner" };
 
@@ -26,15 +26,18 @@ export default function NewEventPage() {
 async function NewEventForm() {
   const user = await requireRole("CHEF", "/chef/events/new");
   const db = getDb();
-  const [venues, menus] = await Promise.all([
+  const [venues, menus, cuisines, profile] = await Promise.all([
     db.venue.findMany({ where: { ownerUserId: user.id }, select: { id: true, neighborhood: true, borough: true, crossStreets: true }, orderBy: { createdAt: "asc" } }),
     db.menu.findMany({ where: { chef: { userId: user.id } }, select: { id: true, title: true }, orderBy: { createdAt: "desc" } }),
+    listCuisines(),
+    db.chefProfile.findUnique({ where: { userId: user.id }, select: { cuisines: { select: { id: true } } } }),
   ]);
   return (
     <div className="mt-8">
       <EventForm
         venues={venues}
         menus={menus}
+        cuisines={cuisines}
         values={{
           title: "",
           description: "",
@@ -44,6 +47,7 @@ async function NewEventForm() {
           priceDollars: 75,
           minGuests: 4,
           maxGuests: 8,
+          cuisineIds: profile?.cuisines.map((c) => c.id) ?? [],
           allowedBookingTypes: ["SEAT", "GROUP", "BUYOUT"],
           dietaryNotes: "",
           byobNote: "",
@@ -51,7 +55,7 @@ async function NewEventForm() {
           menuId: "",
         }}
       />
-      <p className="mt-6 text-xs text-muted">Go/no-go is {RULES.GO_NO_GO_HOURS} hours before start; unpaid requests expire after {RULES.REQUEST_EXPIRY_HOURS} hours.</p>
+      <p className="mt-6 text-xs text-muted">Review headcount and unpaid requests in your guest list. Cancellations are managed manually for now.</p>
     </div>
   );
 }

@@ -85,7 +85,7 @@ export function ApplyForm({ cuisines, defaultName }: { cuisines: Cuisine[]; defa
         <input name="foodCertNumber" maxLength={40} className={fieldClass} />
       </Field>
 
-      <p className="text-xs text-muted">Photos and a sample menu PDF can be added once file uploads are enabled (Vercel Blob).</p>
+      <p className="text-xs text-muted">Photo and sample menu uploads are not available yet.</p>
 
       <button type="submit" disabled={pending} className="rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-white disabled:opacity-50">
         {pending ? "Sending…" : "Send application"}

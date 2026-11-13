@@ -17,7 +17,7 @@ Next.js (App Router) · TypeScript · Tailwind · Prisma + Neon Postgres · Auth
 
 ## Getting started
 
-Requires Node 22.12+ (`.nvmrc`) and pnpm 9.
+Requires Node 22.12+ and pnpm 9. `.nvmrc` pins Node 22.23.5; run `nvm install` and `nvm use` to select it.
 
 ```sh
 pnpm install
@@ -45,6 +45,8 @@ Tests in `src/**/*.db.test.ts` (including the seat-request concurrency test) run
 DIRECT_URL=$TEST_DATABASE_URL pnpm db:deploy
 TEST_DATABASE_URL=postgresql://... pnpm test
 ```
+
+CI starts an isolated Postgres service and applies migrations before verification, so database tests run on every PR. The race tests cover duplicate confirmations, cancellation versus requests/confirmation, and capacity edits/unpublishing versus requests. Event edits and booking transitions share the event row lock and validate state after acquiring it.
 
 ## Scripts
 
