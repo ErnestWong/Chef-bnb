@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { TransitionButton } from "@/components/booking-forms";
+import { EventStatusButton } from "@/components/event-form";
 import { BOOKING_TYPE_LABELS, BookingStatusBadge } from "@/components/booking-status";
 import { Badge, Container } from "@/components/ui";
 import { requireRole } from "@/lib/auth/session";
@@ -49,6 +50,14 @@ async function GuestList({ params }: { params: PageProps<"/chef/events/[id]">["p
         <Badge>{heldSeats(event)} of {event.maxGuests} seats held</Badge>
         <Link href={`/events/${event.id}`} className="text-xs text-accent underline-offset-2 hover:underline">Public page</Link>
       </div>
+      {!started && event.status !== "CANCELLED" && event.status !== "COMPLETED" && (
+        <div className="mt-4 flex flex-wrap items-start gap-2">
+          <Link href={`/chef/events/${event.id}/edit`} className="rounded-full border border-line px-3 py-1.5 text-xs font-medium hover:border-accent">Edit</Link>
+          {event.status === "DRAFT" && <EventStatusButton eventId={event.id} to="PUBLISHED" label="Publish" variant="primary" />}
+          {event.status === "PUBLISHED" && <EventStatusButton eventId={event.id} to="DRAFT" label="Unpublish" />}
+          <EventStatusButton eventId={event.id} to="CANCELLED" label="Cancel dinner" variant="danger" withReason confirmText="Cancel this dinner? Every active booking is cancelled and you refund anyone who paid." />
+        </div>
+      )}
 
       {dietary.length > 0 && (
         <section className="mt-8 rounded-2xl border border-line bg-surface p-5">

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
 import { getDb } from "@/lib/db";
 import { requireRole } from "@/lib/auth/session";
@@ -43,9 +44,12 @@ async function AdminOverview() {
           </div>
         ))}
       </dl>
-      <p className="mt-8 text-sm text-muted">
-        The application queue, event moderation and booking tools arrive in M3–M7.
-      </p>
+      <div className="mt-8 flex flex-wrap gap-3">
+        <Link href="/admin/chefs" className="rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-white hover:opacity-90">
+          Review chef applications{pendingChefs > 0 ? ` (${pendingChefs})` : ""}
+        </Link>
+      </div>
+      <p className="mt-6 text-sm text-muted">Event moderation and booking tools arrive with M7.</p>
     </>
   );
 }

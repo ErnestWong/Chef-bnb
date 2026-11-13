@@ -117,6 +117,7 @@ In dependency order. Items 1–4 unblock the agent entirely for the first two mi
 - Admin queue: list applications, view, approve/reject with a note; email notification deferred to M7 (show status in-app)
 - Public chef profile at `/chefs/[slug]`: bio, credentials, cuisines, photos, dinners hosted (0), reviews (empty state)
 - _Done when:_ a test user applies, admin approves, profile page renders. 🧑 Item 5.
+- _Status (2026-11-13):_ built, minus uploads. Application form (bio, credentials, links, cuisines, hosting setup + FOH/server flags, payment handle, cert number), admin queue with approve / reject / suspend and a note the chef sees. Approval grants the CHEF role; the JWT re-reads roles from the DB every 2 minutes so no re-login is needed. Photos + menu PDF wait for Vercel Blob (item 5). Verified in headless Chrome: apply → approve → chef dashboard unlocked → public profile.
 
 ## Milestones 4–6: the core loop
 
@@ -127,6 +128,7 @@ In dependency order. Items 1–4 unblock the agent entirely for the first two mi
 - Chef dashboard: upcoming/past events, per-event guest list with headcount vs. minimum and dietary notes
 - Event statuses: draft → published → completed/cancelled
 - _Done when:_ a seeded chef publishes an event and it appears in discovery (M5 stub list is fine).
+- _Status (2026-11-13):_ built. Create/edit with an existing or new venue (address private; lat/lng rounded, borough centroid fallback until a geocoder exists) and an existing or inline menu; max ≤ 10 enforced in form, server and DB; future-date check; date/price/capacity lock once seats are held; publish / unpublish / cancel (cancel releases every active booking with a `booking_log` row). Verified in headless Chrome: publish → public page shows menu and cross streets but no address → edit → cancel.
 
 ### M5 — Discovery
 

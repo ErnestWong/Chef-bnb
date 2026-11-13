@@ -65,5 +65,7 @@ TEST_DATABASE_URL=postgresql://... pnpm test
 - [x] M2 — auth and roles (placeholder email sign-in; Google OAuth swap pending checklist item 4)
 - [x] Public site + brand pass #1 — landing, `/events` list + calendar with filters, event pages, `/chefs` directory, chef profiles with anonymous reviews (M5 discovery + M3's public profile, built ahead of the chef intake and booking flows)
 - [x] M6 booking flow — request seats, confirmation with the chef's payment handle, "my bookings" with cancel, chef guest list with mark paid / decline / cancel / attended / no-show; every transition logged
-- [ ] M3 chef intake + admin queue, M4 event creation — next
-- [ ] M7–M9 — see the implementation guide
+- [x] M3 chef intake + admin queue — `/chef/apply`, `/admin/chefs` with approve / reject / suspend (grants or removes the chef role; sessions pick it up within 2 minutes)
+- [x] M4 event creation — `/chef/events/new` and `/edit` with venue + menu creation inline, publish / unpublish / cancel (cancelling releases and logs every active booking)
+- [ ] File uploads (photos, menu PDF) wait for Vercel Blob (checklist item 5)
+- [ ] M7 email + cron, M8 reviews, M9 polish — see the implementation guide

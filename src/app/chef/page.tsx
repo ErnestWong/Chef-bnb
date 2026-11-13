@@ -44,7 +44,10 @@ async function ChefOverview() {
         {awaiting > 0 && <Badge tone="warn">{pluralize(awaiting, "request")} awaiting payment</Badge>}
       </div>
 
-      <Section title="Upcoming" events={upcoming} empty="No upcoming dinners. Event creation arrives in the next slice." />
+      <div>
+        <Link href="/chef/events/new" className="inline-flex rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-white hover:opacity-90">+ New dinner</Link>
+      </div>
+      <Section title="Upcoming" events={upcoming} empty="No upcoming dinners yet — create your first one." />
       <Section title="Past" events={past} empty="No past dinners yet." />
     </div>
   );

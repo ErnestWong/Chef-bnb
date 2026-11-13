@@ -34,7 +34,7 @@ export default auth((req) => {
   if (pathname.startsWith("/admin") && !hasRole(session.user.roles, "ADMIN")) {
     return NextResponse.rewrite(new URL("/not-found", req.nextUrl), { status: 404 });
   }
-  if (pathname.startsWith("/chef") && !hasRole(session.user.roles, "CHEF")) {
+  if (pathname.startsWith("/chef") && pathname !== "/chef/apply" && !hasRole(session.user.roles, "CHEF")) {
     return NextResponse.redirect(new URL("/account?notice=not-a-chef", req.nextUrl));
   }
 

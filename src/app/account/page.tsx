@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import Link from "next/link";
 import { Suspense } from "react";
 import { getDb } from "@/lib/db";
 import { requireUser } from "@/lib/auth/session";
@@ -19,9 +20,11 @@ export default function AccountPage({ searchParams }: PageProps<"/account">) {
 
 async function AccountDetails({ searchParams }: { searchParams: PageProps<"/account">["searchParams"] }) {
   const [user, params] = await Promise.all([requireUser("/account"), searchParams]);
-  const dinnersAttended = await getDb().booking.count({
-    where: { guestUserId: user.id, status: "ATTENDED" },
-  });
+  const db = getDb();
+  const [dinnersAttended, chef] = await Promise.all([
+    db.booking.count({ where: { guestUserId: user.id, status: "ATTENDED" } }),
+    db.chefProfile.findUnique({ where: { userId: user.id }, select: { status: true, slug: true } }),
+  ]);
 
   return (
     <div className="mt-8 flex flex-col gap-6">
@@ -62,7 +65,16 @@ async function AccountDetails({ searchParams }: { searchParams: PageProps<"/acco
           </dd>
         </div>
       </dl>
-      <p className="text-sm text-muted">Bookings, reviews and chef applications arrive in later milestones.</p>
+      {params.applied === "1" && (
+        <p role="status" className="rounded-md bg-accent-soft px-3 py-2 text-sm">Application received — we review every chef by hand.</p>
+      )}
+      <div className="flex flex-wrap gap-3 text-sm">
+        <Link href="/bookings" className="rounded-full border border-line px-4 py-2 hover:border-accent">Your bookings</Link>
+        {!chef && <Link href="/chef/apply" className="rounded-full border border-line px-4 py-2 hover:border-accent">Host a dinner</Link>}
+        {chef?.status === "APPLIED" && <span className="rounded-full border border-line px-4 py-2 text-muted">Chef application pending</span>}
+        {chef?.status === "APPROVED" && <Link href="/chef" className="rounded-full border border-line px-4 py-2 hover:border-accent">Chef dashboard</Link>}
+        {chef && (chef.status === "REJECTED" || chef.status === "SUSPENDED") && <Link href="/chef/apply" className="rounded-full border border-line px-4 py-2 text-muted hover:border-accent">Chef application: {chef.status.toLowerCase()}</Link>}
+      </div>
     </div>
   );
 }

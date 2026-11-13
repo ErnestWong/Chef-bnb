@@ -51,11 +51,29 @@ const devProvider = Credentials({
   },
 });
 
+/** Roles live in the JWT; re-read them from the database this often so an approval shows up without re-login. */
+const ROLE_REFRESH_MS = 2 * 60 * 1000;
+
 // Config is built per request so nothing touches the database at build time.
 export const { handlers, auth, signIn, signOut } = NextAuth(
   (): NextAuthConfig => ({
     ...authConfig,
     adapter: PrismaAdapter(getDb()),
     providers: [...(isDevLoginEnabled() ? [devProvider] : [])],
+    callbacks: {
+      ...authConfig.callbacks,
+      async jwt(params) {
+        const token = await authConfig.callbacks.jwt(params);
+        const checkedAt = (token.rolesCheckedAt as number | undefined) ?? 0;
+        if (params.user) {
+          token.rolesCheckedAt = Date.now();
+        } else if (token.id && Date.now() - checkedAt > ROLE_REFRESH_MS) {
+          const fresh = await getDb().user.findUnique({ where: { id: token.id as string }, select: { roles: true } });
+          if (fresh) token.roles = fresh.roles;
+          token.rolesCheckedAt = Date.now();
+        }
+        return token;
+      },
+    },
   }),
 );
