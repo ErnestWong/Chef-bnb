@@ -34,8 +34,9 @@ export default auth((req) => {
   if (pathname.startsWith("/admin") && !hasRole(session.user.roles, "ADMIN")) {
     return NextResponse.rewrite(new URL("/not-found", req.nextUrl), { status: 404 });
   }
-  if (pathname.startsWith("/chef") && pathname !== "/chef/apply" && !hasRole(session.user.roles, "CHEF")) {
-    return NextResponse.redirect(new URL("/account?notice=not-a-chef", req.nextUrl));
+  // /chef shows applicants their status; everything deeper is for approved chefs.
+  if (pathname.startsWith("/chef/") && pathname !== "/chef/apply" && !hasRole(session.user.roles, "CHEF")) {
+    return NextResponse.redirect(new URL("/chef", req.nextUrl));
   }
 
   return NextResponse.next();

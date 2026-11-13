@@ -70,10 +70,10 @@ async function AccountDetails({ searchParams }: { searchParams: PageProps<"/acco
       )}
       <div className="flex flex-wrap gap-3 text-sm">
         <Link href="/bookings" className="rounded-full border border-line px-4 py-2 hover:border-accent">Your bookings</Link>
-        {!chef && <Link href="/chef/apply" className="rounded-full border border-line px-4 py-2 hover:border-accent">Host a dinner</Link>}
-        {chef?.status === "APPLIED" && <span className="rounded-full border border-line px-4 py-2 text-muted">Chef application pending</span>}
+        {!chef && <Link href="/host" className="rounded-full border border-line px-4 py-2 hover:border-accent">Host a dinner</Link>}
+        {chef?.status === "APPLIED" && <Link href="/chef" className="rounded-full border border-line px-4 py-2 hover:border-accent">Chef application: pending</Link>}
         {chef?.status === "APPROVED" && <Link href="/chef" className="rounded-full border border-line px-4 py-2 hover:border-accent">Chef dashboard</Link>}
-        {chef && (chef.status === "REJECTED" || chef.status === "SUSPENDED") && <Link href="/chef/apply" className="rounded-full border border-line px-4 py-2 text-muted hover:border-accent">Chef application: {chef.status.toLowerCase()}</Link>}
+        {chef && (chef.status === "REJECTED" || chef.status === "SUSPENDED") && <Link href="/chef" className="rounded-full border border-line px-4 py-2 text-muted hover:border-accent">Chef application: {chef.status.toLowerCase()}</Link>}
       </div>
     </div>
   );
