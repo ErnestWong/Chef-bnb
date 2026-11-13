@@ -34,6 +34,26 @@ async function GuestList({ params }: { params: PageProps<"/chef/events/[id]">["p
   const confirmed = confirmedSeats(event);
   const dietary = event.bookings.filter((b) => b.dietaryNotes && (b.status === "REQUESTED" || b.status === "CONFIRMED"));
 
+  const actionsFor = (b: (typeof event.bookings)[number]) => (
+    <>
+      {b.status === "REQUESTED" && !started && (
+        <>
+          <TransitionButton bookingId={b.id} to="CONFIRMED" label="Mark paid" returnTo={returnTo} variant="primary" />
+          <TransitionButton bookingId={b.id} to="CANCELLED" label="Decline" returnTo={returnTo} variant="danger" confirmText="Decline this request? The seats are released." />
+        </>
+      )}
+      {b.status === "CONFIRMED" && !started && (
+        <TransitionButton bookingId={b.id} to="CANCELLED" label="Cancel" returnTo={returnTo} variant="danger" confirmText="Cancel this confirmed booking? You'll need to refund the guest." />
+      )}
+      {b.status === "CONFIRMED" && started && (
+        <>
+          <TransitionButton bookingId={b.id} to="ATTENDED" label="Attended" returnTo={returnTo} variant="primary" />
+          <TransitionButton bookingId={b.id} to="NO_SHOW" label="No-show" returnTo={returnTo} />
+        </>
+      )}
+    </>
+  );
+
   return (
     <Container className="max-w-4xl py-12">
       <p className="text-sm text-muted">
@@ -77,51 +97,54 @@ async function GuestList({ params }: { params: PageProps<"/chef/events/[id]">["p
         {event.bookings.length === 0 ? (
           <p className="mt-3 text-sm text-muted">No requests yet.</p>
         ) : (
-          <div className="mt-3 overflow-x-auto rounded-2xl border border-line">
-            <table className="w-full text-sm">
-              <thead className="bg-surface text-left text-xs text-muted">
-                <tr>
-                  <th className="px-4 py-2 font-medium">Guest</th>
-                  <th className="px-4 py-2 font-medium">Booking</th>
-                  <th className="px-4 py-2 font-medium">Amount</th>
-                  <th className="px-4 py-2 font-medium">Status</th>
-                  <th className="px-4 py-2 font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {event.bookings.map((b) => (
-                  <tr key={b.id} className="border-t border-line">
-                    <td className="px-4 py-3">
+          <>
+            {/* Phones: one card per booking. */}
+            <ul className="mt-3 flex flex-col gap-3 md:hidden">
+              {event.bookings.map((b) => (
+                <li key={b.id} className="rounded-2xl border border-line bg-surface p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
                       <p className="font-medium">{b.guest.name ?? "—"}</p>
-                      <p className="text-xs text-muted">{b.guest.email}</p>
-                    </td>
-                    <td className="px-4 py-3">{BOOKING_TYPE_LABELS[b.type]}, {pluralize(b.partySize, "guest")}</td>
-                    <td className="px-4 py-3">{formatMoney(b.amountCents)}</td>
-                    <td className="px-4 py-3"><BookingStatusBadge status={b.status} /></td>
-                    <td className="px-4 py-3">
-                      <div className="flex flex-wrap gap-2">
-                        {b.status === "REQUESTED" && !started && (
-                          <>
-                            <TransitionButton bookingId={b.id} to="CONFIRMED" label="Mark paid" returnTo={returnTo} variant="primary" />
-                            <TransitionButton bookingId={b.id} to="CANCELLED" label="Decline" returnTo={returnTo} variant="danger" confirmText="Decline this request? The seats are released." />
-                          </>
-                        )}
-                        {b.status === "CONFIRMED" && !started && (
-                          <TransitionButton bookingId={b.id} to="CANCELLED" label="Cancel" returnTo={returnTo} variant="danger" confirmText="Cancel this confirmed booking? You'll need to refund the guest." />
-                        )}
-                        {b.status === "CONFIRMED" && started && (
-                          <>
-                            <TransitionButton bookingId={b.id} to="ATTENDED" label="Attended" returnTo={returnTo} variant="primary" />
-                            <TransitionButton bookingId={b.id} to="NO_SHOW" label="No-show" returnTo={returnTo} />
-                          </>
-                        )}
-                      </div>
-                    </td>
+                      <p className="truncate text-xs text-muted">{b.guest.email}</p>
+                    </div>
+                    <BookingStatusBadge status={b.status} />
+                  </div>
+                  <p className="mt-2 text-sm">{BOOKING_TYPE_LABELS[b.type]}, {pluralize(b.partySize, "guest")} · {formatMoney(b.amountCents)}</p>
+                  <div className="mt-3 flex flex-wrap gap-2">{actionsFor(b)}</div>
+                </li>
+              ))}
+            </ul>
+            {/* Wider screens: a table. */}
+            <div className="mt-3 hidden overflow-x-auto rounded-2xl border border-line md:block">
+              <table className="w-full text-sm">
+                <thead className="bg-surface text-left text-xs text-muted">
+                  <tr>
+                    <th className="px-4 py-2 font-medium">Guest</th>
+                    <th className="px-4 py-2 font-medium">Booking</th>
+                    <th className="px-4 py-2 font-medium">Amount</th>
+                    <th className="px-4 py-2 font-medium">Status</th>
+                    <th className="px-4 py-2 font-medium">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {event.bookings.map((b) => (
+                    <tr key={b.id} className="border-t border-line">
+                      <td className="px-4 py-3">
+                        <p className="font-medium">{b.guest.name ?? "—"}</p>
+                        <p className="text-xs text-muted">{b.guest.email}</p>
+                      </td>
+                      <td className="px-4 py-3">{BOOKING_TYPE_LABELS[b.type]}, {pluralize(b.partySize, "guest")}</td>
+                      <td className="px-4 py-3">{formatMoney(b.amountCents)}</td>
+                      <td className="px-4 py-3"><BookingStatusBadge status={b.status} /></td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-wrap gap-2">{actionsFor(b)}</div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </section>
     </Container>

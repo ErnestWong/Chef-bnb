@@ -36,7 +36,7 @@ async function EventDetails({ params }: { params: PageProps<"/events/[id]">["par
 
   return (
     <>
-      <Container className="py-12">
+      <Container className="py-12 pb-28 lg:pb-12">
         <p className="text-sm text-muted">
           <Link href="/events" className="hover:text-accent">Dinners</Link> / {formatEventDay(event.startsAt)}
         </p>
@@ -157,6 +157,19 @@ async function EventDetails({ params }: { params: PageProps<"/events/[id]">["par
           </aside>
         </div>
       </Container>
+      {!past && !soldOut && (
+        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface/95 px-4 py-3 backdrop-blur lg:hidden">
+          <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
+            <div>
+              <p className="font-display text-xl">
+                {formatMoney(event.priceCents)} <span className="font-sans text-sm text-muted">/ seat</span>
+              </p>
+              <p className="text-xs text-muted">{pluralize(event.seatsLeft, "seat")} left</p>
+            </div>
+            <ButtonLink href={`/events/${event.id}/book`}>Request seats</ButtonLink>
+          </div>
+        </div>
+      )}
     </>
   );
 }

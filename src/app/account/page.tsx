@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "Your account" };
 export default function AccountPage({ searchParams }: PageProps<"/account">) {
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-16">
-      <h1 className="text-2xl font-semibold tracking-tight">Your account</h1>
+      <h1 className="font-display text-4xl">Your account</h1>
       <Suspense fallback={<p className="mt-6 text-sm text-muted">Loading…</p>}>
         <AccountDetails searchParams={searchParams} />
       </Suspense>

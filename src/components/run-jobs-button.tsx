@@ -33,7 +33,7 @@ export function RunJobsButton() {
                     <td className="px-4 py-2">{JOB_LABELS[name]}</td>
                     <td className="px-4 py-2 tabular-nums">{r.processed}</td>
                     <td className="px-4 py-2 tabular-nums">{r.emails}</td>
-                    <td className="px-4 py-2 text-xs text-red-700 dark:text-red-300">{r.errors.length ? r.errors.join("; ") : "—"}</td>
+                    <td className={`px-4 py-2 text-xs ${r.errors.length ? "text-red-700 dark:text-red-300" : "text-muted"}`}>{r.errors.length ? r.errors.join("; ") : "none"}</td>
                   </tr>
                 );
               })}

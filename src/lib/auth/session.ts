@@ -1,5 +1,6 @@
 import "server-only";
 import { notFound, redirect } from "next/navigation";
+import { connection } from "next/server";
 import { auth } from "@/auth";
 import type { Role } from "@/generated/prisma/enums";
 import { hasRole } from "./roles";
@@ -17,6 +18,9 @@ export type CurrentUser = {
  * must render inside a <Suspense> boundary (Cache Components rule).
  */
 export async function getCurrentUser(): Promise<CurrentUser | null> {
+  // Auth.js touches crypto before it reads the cookie; declare the render
+  // dynamic first or Cache Components flags the random value during prerender.
+  await connection();
   const session = await auth();
   const u = session?.user;
   if (!u?.id || !u.email) return null;

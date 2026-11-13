@@ -1,5 +1,9 @@
-import "dotenv/config";
+import { config as loadEnv } from "dotenv";
 import { defineConfig } from "prisma/config";
+
+// Next.js reads .env.local on its own; the Prisma CLI does not, so load it here
+// (first file wins, so a real environment variable still takes precedence).
+loadEnv({ path: [".env.local", ".env"], quiet: true });
 
 // Migrations use the direct (unpooled) Neon URL; the app uses DATABASE_URL (pooled)
 // via @prisma/adapter-neon. `prisma generate` never connects, so it must work without

@@ -206,14 +206,14 @@ export function EventStatusButton({ eventId, to, label, variant = "secondary", c
   return (
     <form
       action={action}
-      className="inline-flex flex-col gap-1"
+      className="inline-flex flex-wrap items-center gap-2"
       onSubmit={(e) => {
         if (confirmText && !window.confirm(confirmText)) e.preventDefault();
       }}
     >
       <input type="hidden" name="eventId" value={eventId} />
       <input type="hidden" name="to" value={to} />
-      {withReason && <input name="reason" placeholder="Reason (emailed to guests)" maxLength={300} className={`${fieldClass} w-64`} />}
+      {withReason && <input name="reason" placeholder="Reason (emailed to guests)" maxLength={300} className={`${fieldClass} w-56 py-1.5 text-xs`} />}
       <button type="submit" disabled={pending} className={`rounded-full px-3 py-1.5 text-xs font-medium disabled:opacity-50 ${styles}`}>
         {pending ? "…" : label}
       </button>
