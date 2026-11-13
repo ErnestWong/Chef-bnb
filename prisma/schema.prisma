@@ -1,0 +1,11 @@
+// Prisma schema. Models arrive in M1 (see docs/implementation-guide.md and the
+// Data model section of docs/strategy.md). Connection URLs live in prisma.config.ts.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
