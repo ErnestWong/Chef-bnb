@@ -27,6 +27,14 @@ pnpm db:seed                 # fake chefs, events, bookings in every state
 pnpm dev                     # http://localhost:3000
 ```
 
+### Sign-in
+
+Auth.js v5 with JWT sessions. Until Google OAuth is configured (checklist item 4), a **placeholder email-only sign-in** (`/signin`, any email, no password) creates users on first use. It is on in development and Vercel previews and off in production unless `AUTH_DEV_LOGIN=true`. Emails in `ADMIN_EMAILS` get the admin role on sign-in; the chef role only comes from admin approval.
+
+Required: `AUTH_SECRET` (`openssl rand -base64 32`). Outside Vercel and `next dev` (for example a local `next start`), also set `AUTH_TRUST_HOST=true`.
+
+Route protection: `src/proxy.ts` does an optimistic JWT check for `/admin`, `/chef`, `/account`; pages re-check with `requireUser` / `requireRole` from `src/lib/auth/session.ts`, always inside `<Suspense>` (Cache Components).
+
 ### Database
 
 Postgres on Neon, through Prisma 7 with `@prisma/adapter-pg`. Schema: `prisma/schema.prisma`; migrations: `prisma/migrations/` (the init migration also carries CHECK constraints Prisma can't express — max 10 guests, min ≤ max, rating 1–5). Set `DATABASE_URL` (pooled, runtime) and `DIRECT_URL` (unpooled, migrations).
@@ -54,5 +62,5 @@ TEST_DATABASE_URL=postgresql://... pnpm test
 
 - [x] M0 — scaffold, `pnpm verify`, CI, `/api/health`, placeholder landing page
 - [x] M1 — schema, migration with DB constraints, seed, booking rules + row-lock concurrency test
-- [ ] M2 — auth and roles
+- [x] M2 — auth and roles (placeholder email sign-in; Google OAuth swap pending checklist item 4)
 - [ ] M3–M9 — see the implementation guide

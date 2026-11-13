@@ -109,6 +109,7 @@ In dependency order. Items 1–4 unblock the agent entirely for the first two mi
 - Roles: guest (default), chef (after approval), admin; route protection (`/admin/*` admin-only, chef dashboard chef-only)
 - Account page stub: name, avatar from Google, dinners attended (0 for now)
 - _Done when:_ Ernest signs in with Google on the preview and sees `/admin`. 🧑 Item 4.
+- _Status (2026-11-13):_ built with a placeholder email-only sign-in in place of Google, by Ernest's call to skip OAuth for now. Google becomes a provider swap in `src/auth.ts` once item 4 is done; roles, route protection and the account page are in place.
 
 ### M3 — Chef intake and admin
 
