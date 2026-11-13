@@ -109,6 +109,7 @@ In dependency order. Items 1–4 unblock the agent entirely for the first two mi
 - Roles: guest (default), chef (after approval), admin; route protection (`/admin/*` admin-only, chef dashboard chef-only)
 - Account page stub: name, avatar from Google, dinners attended (0 for now)
 - _Done when:_ Ernest signs in with Google on the preview and sees `/admin`. 🧑 Item 4.
+- _Status (2026-11-13):_ built with a placeholder email-only sign-in in place of Google, by Ernest's call to skip OAuth for now. Google becomes a provider swap in `src/auth.ts` once item 4 is done; roles, route protection and the account page are in place.
 
 ### M3 — Chef intake and admin
 
@@ -116,6 +117,7 @@ In dependency order. Items 1–4 unblock the agent entirely for the first two mi
 - Admin queue: list applications, view, approve/reject with a note; email notification deferred to M7 (show status in-app)
 - Public chef profile at `/chefs/[slug]`: bio, credentials, cuisines, photos, dinners hosted (0), reviews (empty state)
 - _Done when:_ a test user applies, admin approves, profile page renders. 🧑 Item 5.
+- _Status (2026-11-13):_ built, minus uploads. Application form (bio, credentials, links, cuisines, hosting setup + FOH/server flags, payment handle, cert number), admin queue with approve / reject / suspend and a note the chef sees. Approval grants the CHEF role; the JWT re-reads roles from the DB every 2 minutes so no re-login is needed. Photos + menu PDF wait for Vercel Blob (item 5). Verified in headless Chrome: apply → approve → chef dashboard unlocked → public profile.
 
 ## Milestones 4–6: the core loop
 
@@ -126,6 +128,7 @@ In dependency order. Items 1–4 unblock the agent entirely for the first two mi
 - Chef dashboard: upcoming/past events, per-event guest list with headcount vs. minimum and dietary notes
 - Event statuses: draft → published → completed/cancelled
 - _Done when:_ a seeded chef publishes an event and it appears in discovery (M5 stub list is fine).
+- _Status (2026-11-13):_ built. Create/edit with an existing or new venue (address private; lat/lng rounded, borough centroid fallback until a geocoder exists) and an existing or inline menu; max ≤ 10 enforced in form, server and DB; future-date check; date/price/capacity lock once seats are held; publish / unpublish / cancel (cancel releases every active booking with a `booking_log` row). Verified in headless Chrome: publish → public page shows menu and cross streets but no address → edit → cancel.
 
 ### M5 — Discovery
 
@@ -134,6 +137,7 @@ In dependency order. Items 1–4 unblock the agent entirely for the first two mi
 - Chef directory `/chefs` with cuisine filter
 - Brand pass #1: 🧑 Ernest picks name + accent color (checklist item 8); agent applies a simple warm theme — no heavy design yet
 - _Done when:_ seeded events are browsable and filterable on the preview; exact address appears nowhere in page source. 🧑 Item 6.
+- _Status (2026-11-13):_ built ahead of M3/M4 at Ernest's request (public site first). List + calendar views, all six filters, event page, chef directory and profiles, brand pass #1 (Fraunces display + Geist, one warm accent, light/dark). Verified locally: no private column in any public page. Map shows neighborhood text until the Mapbox token exists (item 6); the "Request seats" button leads to a placeholder until M6.
 
 ### M6 — Booking (the hard one)
 
@@ -143,6 +147,7 @@ In dependency order. Items 1–4 unblock the agent entirely for the first two mi
 - Request expiry after 48 h (checked by cron in M7; until then a manual admin action)
 - Playwright test: full happy path, plus two parallel requests for the last seats where exactly one wins
 - _Done when:_ the race test passes and the happy path runs on preview end to end.
+- _Status (2026-11-13):_ built (ahead of M3/M4, after the public site). Request form, confirmation page with payment handle + instructions, `/bookings` with cancel, chef guest list with mark paid / decline / cancel / attended / no-show. `transitionBooking` enforces the state machine, actor rules and time rules, locks the event row and logs every change; an event with no active bookings left returns to `UNSOLD`. Verified locally: race test, transition tests against Postgres, and the full loop driven in headless Chrome. Request expiry still waits for cron (M7). The Playwright suite is not set up yet — the CDP script in the session scratchpad did the job for now.
 
 ## Milestones 7–9: lifecycle and launch
 

@@ -1,5 +1,14 @@
-// Prisma schema. Models arrive in M1 (see docs/implementation-guide.md and the
-// Data model section of docs/strategy.md). Connection URLs live in prisma.config.ts.
+// Chef-bnb data model. Spec: docs/strategy.md (Data model, Booking model,
+// Engineering design). Connection URLs live in prisma.config.ts.
+//
+// Privacy: columns marked PRIVATE below are only ever selected in server
+// functions that check role and booking status. Public queries use a
+// separate select list (see src/lib/select.ts once it exists).
+//
+// Constraints Prisma can't express (CHECKs) live in the migration SQL:
+//   events:   max_guests <= 10, 1 <= min_guests <= max_guests, price_cents >= 0
+//   bookings: party_size >= 1, amount_cents >= 0
+//   reviews:  rating between 1 and 5
 
 generator client {
   provider = "prisma-client"
@@ -8,4 +17,337 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+// ---------- Enums ----------
+
+enum Role {
+  GUEST
+  CHEF
+  ADMIN
+}
+
+enum Borough {
+  MANHATTAN
+  BROOKLYN
+  QUEENS
+  BRONX
+  STATEN_ISLAND
+}
+
+enum ChefStatus {
+  APPLIED
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum VenueType {
+  CHEF_HOME
+  PARTNER_VENUE
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+  COMPLETED
+}
+
+/// Set by the first booking: open seats to the public, or one party owns the table.
+enum EventMode {
+  UNSOLD
+  OPEN
+  BOUGHT_OUT
+}
+
+enum BookingType {
+  SEAT
+  GROUP
+  BUYOUT
+}
+
+enum BookingStatus {
+  REQUESTED
+  CONFIRMED
+  EXPIRED
+  CANCELLED
+  ATTENDED
+  NO_SHOW
+}
+
+// ---------- Models ----------
+
+/// One row per person; a user can be both a guest and a chef. Column names are
+/// compatible with the Auth.js Prisma adapter (M2 adds Account/Session tables).
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime? @map("email_verified")
+  name          String?
+  image         String?
+  /// PRIVATE
+  phone         String?
+  roles         Role[]    @default([GUEST])
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  chefProfile ChefProfile?
+  venues      Venue[]
+  bookings    Booking[]
+  reviews     Review[]
+  bookingLogs BookingLog[] @relation("BookingLogActor")
+  accounts    Account[]
+  sessions    Session[]
+
+  @@map("users")
+}
+
+// ---------- Auth.js tables (shape required by @auth/prisma-adapter) ----------
+
+model Account {
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Session {
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+  @@map("verification_tokens")
+}
+
+model ChefProfile {
+  id              String     @id @default(cuid())
+  userId          String     @unique @map("user_id")
+  displayName     String     @map("display_name")
+  slug            String     @unique
+  bio             String
+  credentials     String?
+  website         String?
+  instagram       String?
+  homeBorough     Borough?   @map("home_borough")
+  status          ChefStatus @default(APPLIED)
+  /// PRIVATE
+  foodCertNumber  String?    @map("food_cert_number")
+  insuranceOnFile Boolean    @default(false) @map("insurance_on_file")
+  needsFoh        Boolean    @default(false) @map("needs_foh")
+  needsServers    Boolean    @default(false) @map("needs_servers")
+  needsVenue      Boolean    @default(false) @map("needs_venue")
+  /// PRIVATE — Venmo/Zelle handle, shown to a guest only after a seat request.
+  paymentHandle   String?    @map("payment_handle")
+  /// PRIVATE — free-text payment instructions shown alongside the handle.
+  paymentNote     String?    @map("payment_note")
+  photoUrls       String[]   @default([]) @map("photo_urls")
+  /// Admin's approve/reject note.
+  reviewNote      String?    @map("review_note")
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cuisines Cuisine[]
+  menus    Menu[]
+  events   Event[]
+  reviews  Review[]
+
+  @@index([status])
+  @@map("chef_profiles")
+}
+
+model Cuisine {
+  id   String @id @default(cuid())
+  name String @unique
+  slug String @unique
+
+  chefs  ChefProfile[]
+  events Event[]
+
+  @@map("cuisines")
+}
+
+model Menu {
+  id        String   @id @default(cuid())
+  chefId    String   @map("chef_id")
+  title     String
+  /// Array of { name, description?, dietary? } course objects.
+  courses   Json     @default("[]")
+  pdfUrl    String?  @map("pdf_url")
+  isSample  Boolean  @default(false) @map("is_sample")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  chef   ChefProfile @relation(fields: [chefId], references: [id], onDelete: Cascade)
+  events Event[]
+
+  @@index([chefId])
+  @@map("menus")
+}
+
+model Venue {
+  id           String    @id @default(cuid())
+  ownerUserId  String    @map("owner_user_id")
+  type         VenueType @default(CHEF_HOME)
+  /// PRIVATE — exact street address, revealed to confirmed guests 48 h before.
+  address      String
+  neighborhood String
+  borough      Borough
+  crossStreets String    @map("cross_streets")
+  /// Public, rounded to ~3 decimal places before storage.
+  lat          Float
+  lng          Float
+  capacity     Int
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  owner  User    @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  events Event[]
+
+  @@index([ownerUserId])
+  @@map("venues")
+}
+
+model Event {
+  id                  String        @id @default(cuid())
+  chefId              String        @map("chef_id")
+  venueId             String        @map("venue_id")
+  menuId              String?       @map("menu_id")
+  title               String
+  description         String?
+  startsAt            DateTime      @map("starts_at")
+  durationMin         Int           @map("duration_min")
+  priceCents          Int           @map("price_cents")
+  minGuests           Int           @map("min_guests")
+  /// Hard cap of 10, enforced in form, server and DB.
+  maxGuests           Int           @map("max_guests")
+  allowedBookingTypes BookingType[] @map("allowed_booking_types")
+  /// Below min confirmed guests at this time → event auto-cancels. Default: starts_at − 72 h.
+  goNoGoAt            DateTime      @map("go_no_go_at")
+  mode                EventMode     @default(UNSOLD)
+  status              EventStatus   @default(DRAFT)
+  /// Denormalized from venue for discovery filters.
+  borough             Borough
+  byob                Boolean       @default(true)
+  byobNote            String?       @map("byob_note")
+  dietaryNotes        String?       @map("dietary_notes")
+  cancelledAt         DateTime?     @map("cancelled_at")
+  cancelReason        String?       @map("cancel_reason")
+  completedAt         DateTime?     @map("completed_at")
+  createdAt           DateTime      @default(now()) @map("created_at")
+  updatedAt           DateTime      @updatedAt @map("updated_at")
+
+  chef     ChefProfile @relation(fields: [chefId], references: [id], onDelete: Cascade)
+  venue    Venue       @relation(fields: [venueId], references: [id])
+  menu     Menu?       @relation(fields: [menuId], references: [id], onDelete: SetNull)
+  cuisines Cuisine[]
+  bookings Booking[]
+  reviews  Review[]
+
+  @@index([startsAt, status])
+  @@index([borough])
+  @@index([chefId])
+  @@map("events")
+}
+
+model Booking {
+  id                String        @id @default(cuid())
+  eventId           String        @map("event_id")
+  guestUserId       String        @map("guest_user_id")
+  type              BookingType
+  partySize         Int           @map("party_size")
+  amountCents       Int           @map("amount_cents")
+  platformFeeCents  Int           @default(0) @map("platform_fee_cents")
+  status            BookingStatus @default(REQUESTED)
+  /// PRIVATE to guest, chef and admin.
+  dietaryNotes      String?       @map("dietary_notes")
+  paidMarkedAt      DateTime?     @map("paid_marked_at")
+  addressSentAt     DateTime?     @map("address_sent_at")
+  reviewRequestedAt DateTime?     @map("review_requested_at")
+  cancelledAt       DateTime?     @map("cancelled_at")
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+
+  event  Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  guest  User         @relation(fields: [guestUserId], references: [id])
+  review Review?
+  logs   BookingLog[]
+
+  @@index([eventId, status])
+  @@index([guestUserId, status])
+  @@index([status, createdAt])
+  @@map("bookings")
+}
+
+/// Append-only record of every booking state change. With payments offline this
+/// is the record of who confirmed what and when.
+model BookingLog {
+  id          String         @id @default(cuid())
+  bookingId   String         @map("booking_id")
+  fromStatus  BookingStatus? @map("from_status")
+  toStatus    BookingStatus  @map("to_status")
+  /// Null when the system (cron) made the change.
+  actorUserId String?        @map("actor_user_id")
+  note        String?
+  at          DateTime       @default(now())
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  actor   User?   @relation("BookingLogActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([bookingId, at])
+  @@map("booking_log")
+}
+
+model Review {
+  id          String    @id @default(cuid())
+  /// One review per booking.
+  bookingId   String    @unique @map("booking_id")
+  eventId     String    @map("event_id")
+  chefId      String    @map("chef_id")
+  /// PRIVATE — reviewer identity is visible to admin only.
+  authorId    String    @map("author_id")
+  rating      Int
+  body        String?
+  isAnonymous Boolean   @default(true) @map("is_anonymous")
+  removedAt   DateTime? @map("removed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  booking Booking     @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  event   Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  chef    ChefProfile @relation(fields: [chefId], references: [id], onDelete: Cascade)
+  author  User        @relation(fields: [authorId], references: [id])
+
+  @@index([chefId, createdAt])
+  @@index([eventId])
+  @@map("reviews")
 }
