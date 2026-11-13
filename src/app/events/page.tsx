@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { EventCalendar } from "@/components/event-calendar";
 import { EventCard } from "@/components/event-card";
@@ -26,6 +27,10 @@ export default function EventsPage({ searchParams }: PageProps<"/events">) {
 }
 
 async function EventsBrowser({ searchParams }: { searchParams: PageProps<"/events">["searchParams"] }) {
+  // Production logs showed Next flagging the `new Date()` defaults below as an
+  // unstable prerender value even after `await searchParams`; pin the render
+  // to request time explicitly, as the home page does.
+  await connection();
   const filters = parseEventFilters(await searchParams);
   const [events, cuisines] = await Promise.all([listPublishedEvents(filters), listCuisines()]);
 
