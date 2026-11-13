@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { getDb } from "@/lib/db";
 import { requireRole } from "@/lib/auth/session";
+import { RunJobsButton } from "@/components/run-jobs-button";
 
 export const metadata: Metadata = { title: "Admin" };
 
@@ -49,6 +50,15 @@ async function AdminOverview() {
           Review chef applications{pendingChefs > 0 ? ` (${pendingChefs})` : ""}
         </Link>
       </div>
+      <section className="mt-10">
+        <h2 className="text-lg font-semibold tracking-tight">Scheduled jobs</h2>
+        <p className="mt-1 text-sm text-muted">
+          Expire unpaid requests, decide go/no-go, reveal addresses, close finished dinners, request reviews. The cron route runs this on a schedule; every job is idempotent, so running it again here changes nothing it has already done.
+        </p>
+        <div className="mt-4">
+          <RunJobsButton />
+        </div>
+      </section>
       <p className="mt-6 text-sm text-muted">Event moderation and booking tools are not available here yet.</p>
     </>
   );

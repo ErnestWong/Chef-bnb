@@ -67,7 +67,7 @@ export function EventForm({ venues, menus, cuisines, values }: { cuisines: { id:
         <Field label="Price per seat ($)" error={f.priceDollars}>
           <input name="priceDollars" type="number" min={0} max={1000} step={1} defaultValue={values.priceDollars} required readOnly={locked} className={fieldClass} />
         </Field>
-        <Field label="Minimum guests" hint="Review confirmed headcount before deciding whether to run the dinner." error={f.minGuests}>
+        <Field label="Minimum guests" hint="Below this at the cutoff, the dinner is cancelled and guests are emailed." error={f.minGuests}>
           <input name="minGuests" type="number" min={1} max={RULES.MAX_GUESTS} defaultValue={values.minGuests} required readOnly={locked} className={fieldClass} />
         </Field>
         <Field label={`Maximum guests (≤ ${RULES.MAX_GUESTS})`} error={f.maxGuests}>
@@ -107,7 +107,7 @@ export function EventForm({ venues, menus, cuisines, values }: { cuisines: { id:
 
       <section className="rounded-2xl border border-line p-4">
         <p className="text-sm font-medium">Where</p>
-        <p className="mt-1 text-xs text-muted">Guests see the neighborhood and cross streets only. Automated address delivery is not available yet.</p>
+        <p className="mt-1 text-xs text-muted">Guests see the neighborhood and cross streets only. The address goes out by email 48 h before.</p>
         <div className="mt-3">
           <Field label="Venue" error={f.venueId}>
             <select name="venueId" value={venueId} onChange={(e) => setVenueId(e.target.value)} className={fieldClass}>
@@ -213,7 +213,7 @@ export function EventStatusButton({ eventId, to, label, variant = "secondary", c
     >
       <input type="hidden" name="eventId" value={eventId} />
       <input type="hidden" name="to" value={to} />
-      {withReason && <input name="reason" placeholder="Cancellation reason" maxLength={300} className={`${fieldClass} w-64`} />}
+      {withReason && <input name="reason" placeholder="Reason (emailed to guests)" maxLength={300} className={`${fieldClass} w-64`} />}
       <button type="submit" disabled={pending} className={`rounded-full px-3 py-1.5 text-xs font-medium disabled:opacity-50 ${styles}`}>
         {pending ? "…" : label}
       </button>

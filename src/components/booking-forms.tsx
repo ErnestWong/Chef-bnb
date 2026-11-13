@@ -64,7 +64,7 @@ export function RequestSeatsForm({ event }: { event: EventForBooking }) {
         {pending ? "Requesting…" : "Request seats"}
       </button>
       <p className="text-xs text-muted">
-        Nothing is charged here. You&apos;ll get the chef&apos;s payment details next. Your request holds seats until the chef confirms it or the booking is cancelled.
+        Nothing is charged here. You&apos;ll get the chef&apos;s payment details next; the seat is held for {RULES.REQUEST_EXPIRY_HOURS} hours while you pay.
       </p>
     </form>
   );

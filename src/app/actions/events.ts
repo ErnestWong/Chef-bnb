@@ -5,7 +5,9 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getDb } from "@/lib/db";
 import { requireRole } from "@/lib/auth/session";
-import { EventError, eventSchema, saveEvent, setEventStatus } from "@/lib/events/manage";
+import { getMailer } from "@/lib/email/mailer";
+import { notifyEventCancelled } from "@/lib/email/notify";
+import { CHEF_CANCEL_REASON, EventError, eventSchema, saveEvent, setEventStatus } from "@/lib/events/manage";
 import type { FormResult } from "./chefs";
 
 function fieldErrors(issues: z.core.$ZodIssue[]) {
@@ -58,7 +60,10 @@ export async function setEventStatusAction(_prev: FormResult | null, formData: F
   const parsed = statusSchema.safeParse({ eventId: formData.get("eventId"), to: formData.get("to"), reason: formData.get("reason") || undefined });
   if (!parsed.success) return { ok: false, error: "Invalid request." };
   try {
-    await setEventStatus(getDb(), user.id, parsed.data.eventId, parsed.data.to, parsed.data.reason);
+    const { cancelledBookings } = await setEventStatus(getDb(), user.id, parsed.data.eventId, parsed.data.to, parsed.data.reason);
+    if (parsed.data.to === "CANCELLED") {
+      await notifyEventCancelled(getDb(), getMailer(), parsed.data.eventId, cancelledBookings, { reason: parsed.data.reason?.trim() || CHEF_CANCEL_REASON, cancelledBy: "chef" });
+    }
   } catch (err) {
     if (err instanceof EventError) return { ok: false, error: err.message };
     throw err;

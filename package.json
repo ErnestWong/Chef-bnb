@@ -25,11 +25,13 @@
     "@auth/prisma-adapter": "2.11.3",
     "@prisma/adapter-pg": "^7.10.1",
     "@prisma/client": "^7.10.1",
+    "@react-email/components": "1.0.12",
     "next": "16.4.6",
     "next-auth": "5.0.0-beta.32",
     "pg": "^8.23.1",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "resend": "6.38.1",
     "server-only": "^0.0.1",
     "zod": "^4.6.7"
   },

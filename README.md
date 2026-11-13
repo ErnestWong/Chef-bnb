@@ -48,6 +48,14 @@ TEST_DATABASE_URL=postgresql://... pnpm test
 
 CI starts an isolated Postgres service and applies migrations before verification, so database tests run on every PR. The race tests cover duplicate confirmations, cancellation versus requests/confirmation, and capacity edits/unpublishing versus requests. Event edits and booking transitions share the event row lock and validate state after acquiring it.
 
+## Email and scheduled jobs
+
+Emails are React Email templates in `src/lib/email/templates/`, sent through Resend when `RESEND_API_KEY` is set and printed to the server log otherwise. Five idempotent jobs (expire unpaid requests, go/no-go at the cutoff, address reveal, close finished dinners, review requests) run from `GET /api/cron`, which requires `Authorization: Bearer $CRON_SECRET`; Vercel sends that header itself. The admin page has a "Run scheduled jobs now" button for testing. `vercel.json` schedules the route daily at 13:00 UTC because the Hobby plan allows one run a day; on Pro, switch to `0 * * * *`.
+
+```sh
+curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron
+```
+
 ## Scripts
 
 | Script | What |

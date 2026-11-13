@@ -6,6 +6,7 @@ import { TransitionButton } from "@/components/booking-forms";
 import { BOOKING_TYPE_LABELS, BookingStatusBadge } from "@/components/booking-status";
 import { Container } from "@/components/ui";
 import { requireUser } from "@/lib/auth/session";
+import { RULES } from "@/lib/bookings/rules";
 import { BOROUGH_LABELS, formatEventDateTime, formatMoney, pluralize } from "@/lib/format";
 import { getBookingForGuest } from "@/lib/queries/bookings";
 
@@ -29,6 +30,7 @@ async function BookingDetails({ params, searchParams }: { params: PageProps<"/bo
   const isNew = sp.new === "1";
   const upcoming = b.event.startsAt > new Date();
   const cancellable = upcoming && (b.status === "REQUESTED" || b.status === "CONFIRMED");
+  const expiresAt = new Date(b.createdAt.getTime() + RULES.REQUEST_EXPIRY_HOURS * 3600 * 1000);
 
   return (
     <Container className="max-w-2xl py-12">
@@ -81,7 +83,7 @@ async function BookingDetails({ params, searchParams }: { params: PageProps<"/bo
             <p className="mt-2 text-sm text-muted">The chef hasn&apos;t added payment details yet; they&apos;ll reach out.</p>
           )}
           <p className="mt-3 text-xs text-muted">
-            Your request holds seats until it is confirmed or cancelled. The chef marks the booking paid once the money arrives, and you&apos;ll see it confirmed here.
+            Your seats are held until {formatEventDateTime(expiresAt)}; unpaid requests expire then. The chef marks the booking paid once the money arrives, and you&apos;ll get an email when they do.
           </p>
         </section>
       )}

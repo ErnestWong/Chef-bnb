@@ -167,7 +167,12 @@ const events: EventSeed[] = [
   { chef: 2, title: "Mole Night", daysFromNow: -7, hour: 19, price: 7500, min: 4, max: 8, types: ["SEAT", "GROUP"], status: "COMPLETED" },
   // Cancelled (under minimum)
   { chef: 5, title: "Rooftop Mezze", daysFromNow: -3, hour: 18, price: 7000, min: 6, max: 10, types: ["SEAT", "GROUP", "BUYOUT"], status: "CANCELLED" },
-  // Upcoming, published
+  // Upcoming, published. The first two are inside the job windows so the admin
+  // "run jobs now" button has something to do: the first is within 48 h (address
+  // reveal goes out), the second is past its go/no-go cutoff with too few
+  // confirmed guests (it cancels itself).
+  { chef: 2, title: "Tlayudas Tomorrow Night", daysFromNow: 1, hour: 19, price: 6500, min: 1, max: 8, types: ["SEAT", "GROUP"] },
+  { chef: 3, title: "Banchan for Six (under-booked)", daysFromNow: 2, hour: 19, price: 8000, min: 6, max: 8, types: ["SEAT", "GROUP"] },
   { chef: 0, title: "Dim Sum Brunch Table", daysFromNow: 5, hour: 11, price: 5500, min: 4, max: 10, types: ["SEAT", "GROUP"], dietary: "Shellfish throughout; vegetarian plates on request" },
   { chef: 3, title: "Banchan & Braise", daysFromNow: 6, hour: 19, price: 8000, min: 4, max: 8, types: ["SEAT", "GROUP", "BUYOUT"] },
   { chef: 4, title: "Cacio e Pepe Night", daysFromNow: 8, hour: 19, price: 7000, min: 4, max: 8, types: ["SEAT", "GROUP", "BUYOUT"] },
@@ -364,7 +369,8 @@ async function main() {
     for (const p of plan) {
       const guest = guests[p.guest];
       const amount = p.type === "BUYOUT" ? e.price * Math.max(p.size, e.min) : e.price * p.size;
-      const createdAt = new Date(startsAt.getTime() - (10 + p.guest) * DAY);
+      // Requests are recent so the expiry job (48 h) leaves the demo data alone; everything else was booked well ahead.
+      const createdAt = p.status === "REQUESTED" ? new Date(Date.now() - (1 + (p.guest % 3)) * HOUR) : new Date(startsAt.getTime() - (10 + p.guest) * DAY);
       const booking = await db.booking.create({
         data: {
           eventId: event.id,

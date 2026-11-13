@@ -44,7 +44,7 @@ export default function Home() {
           {[
             ["Pick a dinner", "Dated events with a fixed price per seat, a set menu and a small table — ten guests at most."],
             ["Book your way", "Take a solo seat and meet people, bring 2–5 friends, or buy out the whole table for an occasion."],
-            ["Bring a bottle", "Every dinner is BYOB. Only the neighborhood is public; confirmed guests receive location details privately."],
+            ["Bring a bottle", "Every dinner is BYOB. The exact address arrives by email 48 hours before you sit down."],
           ].map(([title, body]) => (
             <div key={title}>
               <h3 className="font-display text-2xl">{title}</h3>

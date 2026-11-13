@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { Db } from "@/lib/db";
+import type { Prisma } from "@/generated/prisma/client";
 import type { Borough } from "@/generated/prisma/enums";
 import { RULES } from "@/lib/bookings/rules";
 import { APP_TIME_ZONE } from "@/lib/format";
@@ -193,8 +194,44 @@ export async function saveEvent(db: Db, userId: string, input: EventInput, event
 
 export type EventStatusChange = "PUBLISHED" | "DRAFT" | "CANCELLED";
 
-/** Publish / unpublish / cancel. Unpublishing is only allowed with no active bookings. */
-export async function setEventStatus(db: Db, userId: string, eventId: string, to: EventStatusChange, reason?: string, now = new Date()) {
+export type CancelledBooking = { id: string; status: "REQUESTED" | "CONFIRMED" };
+
+/**
+ * Cancel an event and every active booking on it, inside the caller's
+ * transaction (the caller holds the event lock). Used by the chef's cancel
+ * button and by the go/no-go job. The chef refunds offline; every booking
+ * gets a booking_log row naming the actor (null = the system).
+ */
+export async function cancelEventTx(
+  tx: Prisma.TransactionClient,
+  eventId: string,
+  opts: { actorUserId: string | null; reason: string; now?: Date },
+): Promise<CancelledBooking[]> {
+  const now = opts.now ?? new Date();
+  const active = await tx.booking.findMany({ where: { eventId, status: { in: ["REQUESTED", "CONFIRMED"] } }, select: { id: true, status: true } });
+  for (const b of active) {
+    await tx.booking.update({ where: { id: b.id }, data: { status: "CANCELLED", cancelledAt: now } });
+    await tx.bookingLog.create({ data: { bookingId: b.id, fromStatus: b.status, toStatus: "CANCELLED", actorUserId: opts.actorUserId, note: opts.reason, at: now } });
+  }
+  await tx.event.update({ where: { id: eventId }, data: { status: "CANCELLED", cancelledAt: now, cancelReason: opts.reason, mode: "UNSOLD" } });
+  return active as CancelledBooking[];
+}
+
+export const CHEF_CANCEL_REASON = "Dinner cancelled by the chef";
+
+/**
+ * Publish / unpublish / cancel. Unpublishing is only allowed with no active
+ * bookings. Returns the bookings a cancellation released (empty otherwise) so
+ * the caller can notify those guests after the transaction commits.
+ */
+export async function setEventStatus(
+  db: Db,
+  userId: string,
+  eventId: string,
+  to: EventStatusChange,
+  reason?: string,
+  now = new Date(),
+): Promise<{ cancelledBookings: CancelledBooking[] }> {
   return db.$transaction(async (tx) => {
     await tx.$queryRaw`SELECT id FROM events WHERE id = ${eventId} FOR UPDATE`;
     const event = await tx.event.findFirst({
@@ -202,20 +239,16 @@ export async function setEventStatus(db: Db, userId: string, eventId: string, to
       select: { id: true, status: true, startsAt: true, chef: { select: { status: true } }, _count: { select: { bookings: { where: { status: { in: ["REQUESTED", "CONFIRMED"] } } } } } },
     });
     if (!event) throw new EventError("not_found");
-    if (event.status === to) return event;
+    if (event.status === to) return { cancelledBookings: [] };
     if (event.status === "CANCELLED" || event.status === "COMPLETED") throw new EventError("closed");
     if (event.startsAt <= now) throw new EventError("in_past");
     if (to === "PUBLISHED" && event.chef.status !== "APPROVED") throw new EventError("not_chef");
     if (to === "DRAFT" && event._count.bookings > 0) throw new EventError("locked");
     if (to === "CANCELLED") {
-      // Cancel every active booking too; the chef refunds offline. Logged as system/chef action.
-      const active = await tx.booking.findMany({ where: { eventId, status: { in: ["REQUESTED", "CONFIRMED"] } }, select: { id: true, status: true } });
-      for (const b of active) {
-        await tx.booking.update({ where: { id: b.id }, data: { status: "CANCELLED", cancelledAt: new Date() } });
-        await tx.bookingLog.create({ data: { bookingId: b.id, fromStatus: b.status, toStatus: "CANCELLED", actorUserId: userId, note: reason || "Dinner cancelled by the chef" } });
-      }
-      return tx.event.update({ where: { id: eventId }, data: { status: "CANCELLED", cancelledAt: new Date(), cancelReason: reason || null, mode: "UNSOLD" } });
+      const cancelledBookings = await cancelEventTx(tx, eventId, { actorUserId: userId, reason: reason?.trim() || CHEF_CANCEL_REASON, now });
+      return { cancelledBookings };
     }
-    return tx.event.update({ where: { id: eventId }, data: { status: to } });
+    await tx.event.update({ where: { id: eventId }, data: { status: to } });
+    return { cancelledBookings: [] };
   });
 }

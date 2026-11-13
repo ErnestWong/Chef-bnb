@@ -5,6 +5,7 @@ import { EventForm } from "@/components/event-form";
 import { Container } from "@/components/ui";
 import { requireRole } from "@/lib/auth/session";
 import { getDb } from "@/lib/db";
+import { RULES } from "@/lib/bookings/rules";
 import { listCuisines } from "@/lib/queries/events";
 
 export const metadata: Metadata = { title: "New dinner" };
@@ -55,7 +56,7 @@ async function NewEventForm() {
           menuId: "",
         }}
       />
-      <p className="mt-6 text-xs text-muted">Review headcount and unpaid requests in your guest list. Cancellations are managed manually for now.</p>
+      <p className="mt-6 text-xs text-muted">Go/no-go is {RULES.GO_NO_GO_HOURS} hours before start: below your minimum, the dinner cancels itself and guests are emailed. Unpaid requests expire after {RULES.REQUEST_EXPIRY_HOURS} hours.</p>
     </div>
   );
 }
