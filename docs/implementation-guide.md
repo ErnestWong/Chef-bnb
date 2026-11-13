@@ -145,6 +145,7 @@ In dependency order. Items 1–4 unblock the agent entirely for the first two mi
 - Request expiry after 48 h (checked by cron in M7; until then a manual admin action)
 - Playwright test: full happy path, plus two parallel requests for the last seats where exactly one wins
 - _Done when:_ the race test passes and the happy path runs on preview end to end.
+- _Status (2026-11-13):_ built (ahead of M3/M4, after the public site). Request form, confirmation page with payment handle + instructions, `/bookings` with cancel, chef guest list with mark paid / decline / cancel / attended / no-show. `transitionBooking` enforces the state machine, actor rules and time rules, locks the event row and logs every change; an event with no active bookings left returns to `UNSOLD`. Verified locally: race test, transition tests against Postgres, and the full loop driven in headless Chrome. Request expiry still waits for cron (M7). The Playwright suite is not set up yet — the CDP script in the session scratchpad did the job for now.
 
 ## Milestones 7–9: lifecycle and launch
 

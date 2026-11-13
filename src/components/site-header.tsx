@@ -44,6 +44,7 @@ async function UserMenu() {
     <>
       {hasRole(user.roles, "ADMIN") && <Link href="/admin" className="hover:text-accent">Admin</Link>}
       {hasRole(user.roles, "CHEF") && <Link href="/chef" className="hover:text-accent">Chef</Link>}
+      <Link href="/bookings" className="hover:text-accent">Bookings</Link>
       <Link href="/account" className="font-medium hover:text-accent">
         {user.name ?? user.email}
       </Link>

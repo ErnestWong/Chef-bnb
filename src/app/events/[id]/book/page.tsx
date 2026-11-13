@@ -2,34 +2,60 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { RequestSeatsForm } from "@/components/booking-forms";
 import { Container } from "@/components/ui";
+import { requireUser } from "@/lib/auth/session";
+import { formatEventDateTime, formatMoney, pluralize } from "@/lib/format";
 import { getPublicEvent } from "@/lib/queries/events";
 
 export const metadata: Metadata = { title: "Request seats" };
 
-/** Placeholder until the booking flow (M6) lands; the backend rule set already exists. */
 export default function BookPage({ params }: PageProps<"/events/[id]/book">) {
   return (
     <main className="flex-1">
       <Suspense fallback={<Container className="py-12 text-sm text-muted">Loading…</Container>}>
-        <BookStub params={params} />
+        <BookForm params={params} />
       </Suspense>
     </main>
   );
 }
 
-async function BookStub({ params }: { params: PageProps<"/events/[id]/book">["params"] }) {
-  const event = await getPublicEvent((await params).id);
+async function BookForm({ params }: { params: PageProps<"/events/[id]/book">["params"] }) {
+  const { id } = await params;
+  await requireUser(`/events/${id}/book`);
+  const event = await getPublicEvent(id);
   if (!event) notFound();
+
+  const closed = event.status !== "PUBLISHED" || event.seatsLeft === 0;
+
   return (
-    <Container className="max-w-xl py-16">
-      <h1 className="font-display text-3xl">Booking opens soon</h1>
-      <p className="mt-3 text-muted">
-        Seat requests for <span className="font-medium text-foreground">{event.title}</span> aren&apos;t open yet. The booking flow is the next thing being built.
+    <Container className="max-w-xl py-12">
+      <p className="text-sm text-muted">
+        <Link href={`/events/${event.id}`} className="hover:text-accent">← {event.title}</Link>
       </p>
-      <Link href={`/events/${event.id}`} className="mt-8 inline-block text-accent underline-offset-2 hover:underline">
-        ← Back to the dinner
-      </Link>
+      <h1 className="font-display mt-3 text-3xl">Request seats</h1>
+      <p className="mt-2 text-muted">
+        {formatEventDateTime(event.startsAt)} · {formatMoney(event.priceCents)} per seat · {pluralize(event.seatsLeft, "seat")} left
+      </p>
+      <div className="mt-8">
+        {closed ? (
+          <p className="rounded-xl border border-line p-4 text-sm text-muted">
+            {event.mode === "BOUGHT_OUT" ? "This dinner has been bought out." : "This dinner isn't taking requests right now."}
+          </p>
+        ) : (
+          <RequestSeatsForm
+            event={{
+              id: event.id,
+              allowedBookingTypes: event.allowedBookingTypes,
+              minGuests: event.minGuests,
+              maxGuests: event.maxGuests,
+              seatsLeft: event.seatsLeft,
+              mode: event.mode,
+              priceCents: event.priceCents,
+            }}
+          />
+        )}
+      </div>
     </Container>
   );
 }
