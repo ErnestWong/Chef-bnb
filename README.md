@@ -22,7 +22,20 @@ Requires Node 22.12+ (`.nvmrc`) and pnpm 9.
 ```sh
 pnpm install
 cp .env.example .env.local   # then fill in values
+pnpm db:deploy               # apply migrations (needs DIRECT_URL)
+pnpm db:seed                 # fake chefs, events, bookings in every state
 pnpm dev                     # http://localhost:3000
+```
+
+### Database
+
+Postgres on Neon, through Prisma 7 with `@prisma/adapter-pg`. Schema: `prisma/schema.prisma`; migrations: `prisma/migrations/` (the init migration also carries CHECK constraints Prisma can't express — max 10 guests, min ≤ max, rating 1–5). Set `DATABASE_URL` (pooled, runtime) and `DIRECT_URL` (unpooled, migrations).
+
+Tests in `src/**/*.db.test.ts` (including the seat-request concurrency test) run against a real Postgres when `TEST_DATABASE_URL` is set and migrated; otherwise they're skipped:
+
+```sh
+DIRECT_URL=$TEST_DATABASE_URL pnpm db:deploy
+TEST_DATABASE_URL=postgresql://... pnpm test
 ```
 
 ## Scripts
@@ -40,6 +53,6 @@ pnpm dev                     # http://localhost:3000
 ## Status
 
 - [x] M0 — scaffold, `pnpm verify`, CI, `/api/health`, placeholder landing page
-- [ ] M1 — schema and seed
+- [x] M1 — schema, migration with DB constraints, seed, booking rules + row-lock concurrency test
 - [ ] M2 — auth and roles
 - [ ] M3–M9 — see the implementation guide
