@@ -97,7 +97,8 @@ export default function HostPage() {
             </ul>
             <p className="mt-6 max-w-prose text-sm text-muted">
               Not sure you qualify? Apply anyway and say so in the credentials box; we read every one. Want to see what a dinner looks like first?{" "}
-              <Link href="/events" className="text-accent underline-offset-2 hover:underline">Browse the calendar</Link>.
+              <Link href="/events" className="text-accent underline-offset-2 hover:underline">Browse the calendar</Link>. The full rules for hosts are in the{" "}
+              <Link href="/terms#chefs" className="text-accent underline-offset-2 hover:underline">terms</Link>.
             </p>
           </div>
           <aside className="flex h-fit flex-col gap-4 rounded-2xl border border-line bg-surface p-6">

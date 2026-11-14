@@ -315,6 +315,7 @@ Durations assume one engineer part-time plus your evenings; the gates matter mor
 - [ ] Max group size for non-buyout bookings: 5, or chef-set?
 - [ ] Vetting bar: what credentials or trial dinner does a chef need to pass?
 - [ ] Name and domain.
+- [ ] Terms and privacy (drafted 2026-11-14 at `/terms`, `/privacy`): lawyer to confirm the refund rule when a guest cancels (today: chef's call), the liability cap, and what account deletion keeps.
 
 ## Sources
 
