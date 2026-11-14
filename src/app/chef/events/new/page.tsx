@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { EventForm } from "@/components/event-form";
 import { Container } from "@/components/ui";
-import { requireRole } from "@/lib/auth/session";
+import { requireChef } from "@/lib/auth/session";
 import { getDb } from "@/lib/db";
 import { RULES } from "@/lib/bookings/rules";
 import { listCuisines } from "@/lib/queries/events";
@@ -25,7 +25,7 @@ export default function NewEventPage() {
 }
 
 async function NewEventForm() {
-  const user = await requireRole("CHEF", "/chef/events/new");
+  const user = await requireChef("/chef/events/new");
   const db = getDb();
   const [venues, menus, cuisines, profile] = await Promise.all([
     db.venue.findMany({ where: { ownerUserId: user.id }, select: { id: true, neighborhood: true, borough: true, crossStreets: true }, orderBy: { createdAt: "asc" } }),

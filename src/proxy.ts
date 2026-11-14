@@ -34,10 +34,9 @@ export default auth((req) => {
   if (pathname.startsWith("/admin") && !hasRole(session.user.roles, "ADMIN")) {
     return NextResponse.rewrite(new URL("/not-found", req.nextUrl), { status: 404 });
   }
-  // /chef shows applicants their status; everything deeper is for approved chefs.
-  if (pathname.startsWith("/chef/") && pathname !== "/chef/apply" && !hasRole(session.user.roles, "CHEF")) {
-    return NextResponse.redirect(new URL("/chef", req.nextUrl));
-  }
+  // /chef/* is gated by the pages themselves (requireChef): the cookie's roles
+  // can lag the database by minutes after an approval, and a redirect here
+  // would bounce a freshly approved chef off their own dinner form.
 
   return NextResponse.next();
 });

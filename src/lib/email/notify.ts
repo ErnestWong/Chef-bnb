@@ -1,6 +1,7 @@
 import "server-only";
 import type { Db } from "@/lib/db";
 import type { CancelledBooking } from "@/lib/events/manage";
+import { requestExpiresAt } from "@/lib/bookings/rules";
 import type { Mailer } from "./mailer";
 import * as T from "./templates";
 
@@ -38,6 +39,53 @@ export function notifySeatRequested(db: Db, mailer: Mailer, bookingId: string) {
       ...T.seatRequestedEmail({
         chefName: b.event.chef.displayName, guestName: nameOf(b.guest), bookingType: b.type, partySize: b.partySize, amountCents: b.amountCents,
         dietaryNotes: b.dietaryNotes, eventId: b.event.id, eventTitle: b.event.title, startsAt: b.event.startsAt,
+      }),
+    });
+  });
+}
+
+/** To the guest right after they request: amount, the chef's handle, and the deadline. */
+export function notifyRequestReceived(db: Db, mailer: Mailer, bookingId: string) {
+  return attempt(`request received ${bookingId}`, async () => {
+    const b = await db.booking.findUnique({
+      where: { id: bookingId },
+      select: {
+        id: true, type: true, partySize: true, amountCents: true, createdAt: true,
+        guest: { select: { name: true, email: true } },
+        // PRIVATE: the payment handle goes only to the guest who holds this request.
+        event: { select: { title: true, startsAt: true, chef: { select: { displayName: true, paymentHandle: true, paymentNote: true } } } },
+      },
+    });
+    if (!b) return false;
+    return mailer.send({
+      to: b.guest.email,
+      ...T.requestReceivedEmail({
+        guestName: nameOf(b.guest), chefName: b.event.chef.displayName, bookingId: b.id, eventTitle: b.event.title, startsAt: b.event.startsAt,
+        bookingType: b.type, partySize: b.partySize, amountCents: b.amountCents,
+        paymentHandle: b.event.chef.paymentHandle, paymentNote: b.event.chef.paymentNote,
+        expiresAt: requestExpiresAt(b.createdAt, b.event.startsAt),
+      }),
+    });
+  });
+}
+
+/** The chef declined a request (to the guest), or a confirmed guest cancelled (to the chef). */
+export function notifyBookingCancelledByOther(db: Db, mailer: Mailer, bookingId: string, recipient: "guest" | "chef") {
+  return attempt(`booking cancelled ${bookingId} → ${recipient}`, async () => {
+    const b = await db.booking.findUnique({
+      where: { id: bookingId },
+      select: {
+        partySize: true, amountCents: true,
+        guest: { select: { name: true, email: true } },
+        event: { select: { id: true, title: true, startsAt: true, chef: { select: { displayName: true, user: { select: { email: true } } } } } },
+      },
+    });
+    if (!b) return false;
+    return mailer.send({
+      to: recipient === "chef" ? b.event.chef.user.email : b.guest.email,
+      ...T.bookingCancelledEmail({
+        recipient, guestName: nameOf(b.guest), chefName: b.event.chef.displayName, eventId: b.event.id, eventTitle: b.event.title, startsAt: b.event.startsAt,
+        partySize: b.partySize, amountCents: b.amountCents,
       }),
     });
   });

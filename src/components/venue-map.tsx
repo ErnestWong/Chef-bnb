@@ -12,8 +12,8 @@ type Props = {
 
 /**
  * Neighborhood-level location. With a Mapbox token this renders a static map
- * image with a rounded pin; without one it falls back to text, so the page
- * works before checklist item 6 is done. The exact address is never passed in.
+ * image with a rounded pin; without one only the neighborhood line renders,
+ * so the page works (and shows nothing internal) before checklist item 6 is done. The exact address is never passed in.
  */
 export function VenueMap({ neighborhood, borough, crossStreets, lat, lng }: Props) {
   const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
@@ -28,11 +28,7 @@ export function VenueMap({ neighborhood, borough, crossStreets, lat, lng }: Prop
         // Static image from Mapbox; next/image is skipped to avoid remote-pattern config for a dev-only token.
         // eslint-disable-next-line @next/next/no-img-element
         <img src={src} alt={`Map of ${label}`} width={640} height={320} className="h-56 w-full object-cover" />
-      ) : (
-        <div className="flex h-40 items-center justify-center bg-accent-soft/60 text-sm text-muted">
-          Map arrives with the Mapbox token
-        </div>
-      )}
+      ) : null}
       <figcaption className="px-4 py-3 text-sm">
         <span className="font-medium">{neighborhood}</span>, {BOROUGH_LABELS[borough]} · near {crossStreets}
         <span className="block text-xs text-muted">Exact address is emailed to confirmed guests 48 hours before.</span>

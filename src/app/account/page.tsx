@@ -54,16 +54,6 @@ async function AccountDetails({ searchParams }: { searchParams: PageProps<"/acco
           <dt className="text-muted">Dinners attended</dt>
           <dd className="text-2xl font-semibold">{dinnersAttended}</dd>
         </div>
-        <div>
-          <dt className="text-muted">Roles</dt>
-          <dd className="mt-1 flex flex-wrap gap-1">
-            {user.roles.map((r) => (
-              <span key={r} className="rounded-full border border-foreground/15 px-2 py-0.5 text-xs">
-                {r.toLowerCase()}
-              </span>
-            ))}
-          </dd>
-        </div>
       </dl>
       {params.applied === "1" && (
         <p role="status" className="rounded-md bg-accent-soft px-3 py-2 text-sm">Application received — we review every chef by hand.</p>

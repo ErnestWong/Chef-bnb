@@ -10,7 +10,7 @@ import { notifyEventCancelled } from "@/lib/email/notify";
 import { CHEF_CANCEL_REASON, EventError, eventSchema, saveEvent, setEventStatus } from "@/lib/events/manage";
 import { LIMITS } from "@/lib/security/limits";
 import { rateLimitMessage } from "@/lib/security/rate-limit";
-import type { FormResult } from "./chefs";
+import type { FormResult, SubmittedValues } from "./chefs";
 
 function fieldErrors(issues: z.core.$ZodIssue[]) {
   const out: Record<string, string> = {};
@@ -35,22 +35,24 @@ export async function saveEventAction(_prev: FormResult | null, formData: FormDa
   raw.cuisineIds = formData.getAll("cuisineIds").map(String);
   raw.allowedBookingTypes = formData.getAll("allowedBookingTypes").map(String);
   if (raw.venueBorough === undefined) raw.venueBorough = "";
+  const values: SubmittedValues = {};
+  for (const [k, v] of Object.entries(raw)) if (v !== undefined) values[k] = Array.isArray(v) ? v.map(String) : String(v);
   const parsed = eventSchema.safeParse(raw);
-  if (!parsed.success) return { ok: false, fields: fieldErrors(parsed.error.issues) };
+  if (!parsed.success) return { ok: false, fields: fieldErrors(parsed.error.issues), values };
   const limited = await rateLimitMessage(getDb(), `event:user:${user.id}`, LIMITS.eventSavesPerChef);
-  if (limited) return { ok: false, error: limited };
+  if (limited) return { ok: false, error: limited, values };
 
   let id: string;
   try {
     id = (await saveEvent(getDb(), user.id, parsed.data, eventId)).id;
   } catch (err) {
-    if (err instanceof EventError) return { ok: false, error: err.message };
+    if (err instanceof EventError) return { ok: false, error: err.message, values };
     throw err;
   }
   revalidatePath("/events");
   revalidatePath(`/events/${id}`);
   revalidatePath("/chef");
-  redirect(`/chef/events/${id}?saved=1`);
+  redirect(`/chef/events/${id}?${parsed.data.intent === "publish" ? "published" : "saved"}=1`);
 }
 
 const statusSchema = z.object({
@@ -75,5 +77,6 @@ export async function setEventStatusAction(_prev: FormResult | null, formData: F
   revalidatePath("/events");
   revalidatePath(`/events/${parsed.data.eventId}`);
   revalidatePath("/chef");
-  redirect(`/chef/events/${parsed.data.eventId}`);
+  const flag = parsed.data.to === "PUBLISHED" ? "published" : parsed.data.to === "DRAFT" ? "unpublished" : "cancelled";
+  redirect(`/chef/events/${parsed.data.eventId}?${flag}=1`);
 }

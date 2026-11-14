@@ -13,7 +13,9 @@ import { rateLimitMessage } from "@/lib/security/rate-limit";
 import type { ActionResult } from "./bookings";
 
 export type FieldErrors = Record<string, string>;
-export type FormResult = { ok: true } | { ok: false; error?: string; fields?: FieldErrors };
+export type SubmittedValues = Record<string, string | string[]>;
+/** On failure, `values` echoes what was submitted so the form can keep it on screen (React resets forms after an action). */
+export type FormResult = { ok: true } | { ok: false; error?: string; fields?: FieldErrors; values?: SubmittedValues };
 
 function fieldErrors(issues: z.core.$ZodIssue[]): FieldErrors {
   const out: FieldErrors = {};

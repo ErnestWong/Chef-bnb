@@ -59,6 +59,20 @@ export async function getPublicEvent(id: string): Promise<PublicEvent | null> {
   return decorate(event, held.get(event.id) ?? 0);
 }
 
+/**
+ * Any of the chef's own events regardless of status, shaped like the public
+ * page, so a draft can be previewed by its owner (and admins) before publishing.
+ */
+export async function getEventPreviewForOwner(id: string, user: { id: string; roles: string[] }): Promise<PublicEvent | null> {
+  const event = await getDb().event.findFirst({
+    where: { id, ...(user.roles.includes("ADMIN") ? {} : { chef: { userId: user.id } }) },
+    select: PUBLIC_EVENT_SELECT,
+  });
+  if (!event) return null;
+  const held = await seatsHeldByEvent([event.id]);
+  return decorate(event, held.get(event.id) ?? 0);
+}
+
 /** A chef's published upcoming events, for their profile page. */
 export async function listUpcomingEventsForChef(chefId: string, now = new Date()): Promise<PublicEvent[]> {
   const events = await getDb().event.findMany({

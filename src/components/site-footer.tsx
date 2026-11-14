@@ -15,9 +15,6 @@ export function SiteFooter() {
           <Link href="/host" className="hover:text-accent">
             Host a dinner
           </Link>
-          <Link href="/signin" className="hover:text-accent">
-            Sign in
-          </Link>
         </nav>
       </div>
     </footer>

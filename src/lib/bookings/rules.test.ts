@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { decideSeatRequest, type EventSnapshot, RULES } from "./rules";
+import { decideSeatRequest, requestExpiresAt, type EventSnapshot, RULES } from "./rules";
 
 const now = new Date("2026-12-01T00:00:00Z");
 
@@ -136,5 +136,17 @@ describe("decideSeatRequest", () => {
       now,
     );
     expect(d).toMatchObject({ code: "type_not_allowed" });
+  });
+});
+
+describe("requestExpiresAt", () => {
+  it("is 48 h after the request when the dinner is further out", () => {
+    const made = new Date("2026-12-01T00:00:00Z");
+    expect(requestExpiresAt(made, new Date("2026-12-10T00:00:00Z"))).toEqual(new Date("2026-12-03T00:00:00Z"));
+  });
+
+  it("never outlives the dinner", () => {
+    const made = new Date("2026-12-01T00:00:00Z");
+    expect(requestExpiresAt(made, new Date("2026-12-01T20:00:00Z"))).toEqual(new Date("2026-12-01T20:00:00Z"));
   });
 });

@@ -63,6 +63,29 @@ export async function getBookingForGuest(id: string, user: CurrentUser): Promise
   });
 }
 
+/** The signed-in guest's active (requested or confirmed) booking on one event, if any. */
+export async function getActiveBookingForViewer(eventId: string, userId: string) {
+  return getDb().booking.findFirst({
+    where: { eventId, guestUserId: userId, status: { in: ["REQUESTED", "CONFIRMED"] } },
+    select: { id: true, status: true, partySize: true },
+  });
+}
+
+/**
+ * The venue's exact address for a booking whose guest has already been emailed
+ * it (bookings.address_sent_at is set). PRIVATE: this and notifyAddressReveal
+ * are the only two paths that hand a street address to a guest, and both are
+ * gated on a confirmed booking inside the reveal window.
+ */
+export async function getRevealedAddress(bookingId: string, user: CurrentUser): Promise<{ address: string; sentAt: Date } | null> {
+  const b = await getDb().booking.findFirst({
+    where: { id: bookingId, guestUserId: user.id, status: { in: ["CONFIRMED", "ATTENDED"] }, addressSentAt: { not: null } },
+    select: { addressSentAt: true, event: { select: { venue: { select: { address: true } } } } },
+  });
+  if (!b?.addressSentAt) return null;
+  return { address: b.event.venue.address, sentAt: b.addressSentAt };
+}
+
 const CHEF_EVENT_SELECT = {
   id: true,
   title: true,

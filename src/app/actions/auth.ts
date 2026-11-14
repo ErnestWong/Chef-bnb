@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { AuthError } from "next-auth";
 import { redirect } from "next/navigation";
-import { signIn, signOut } from "@/auth";
+import { signIn, signOut, unstable_update } from "@/auth";
 import { DEV_PROVIDER_ID } from "@/lib/auth/dev-login";
 import { getDb } from "@/lib/db";
 import { LIMITS } from "@/lib/security/limits";
@@ -56,4 +56,14 @@ export async function devSignIn(formData: FormData): Promise<void> {
 
 export async function signOutAction(): Promise<void> {
   await signOut({ redirectTo: "/" });
+}
+
+/**
+ * Re-issue the session cookie with roles read fresh from the database. The
+ * "You're approved" screen calls this so a new chef reaches their dashboard
+ * without waiting for the periodic refresh or signing out.
+ */
+export async function refreshSessionAction(): Promise<void> {
+  await unstable_update({});
+  redirect("/chef");
 }

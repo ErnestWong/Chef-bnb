@@ -3,30 +3,34 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { TransitionButton } from "@/components/booking-forms";
+import { CopyLinkButton } from "@/components/copy-link-button";
 import { EventStatusButton } from "@/components/event-form";
 import { BOOKING_TYPE_LABELS, BookingStatusBadge } from "@/components/booking-status";
 import { Badge, Container } from "@/components/ui";
-import { requireRole } from "@/lib/auth/session";
+import { requireChef } from "@/lib/auth/session";
 import { formatEventDateTime, formatMoney, pluralize } from "@/lib/format";
 import { confirmedSeats, getEventForChef, heldSeats } from "@/lib/queries/bookings";
+import { appUrl } from "@/lib/app-url";
 
 export const metadata: Metadata = { title: "Guest list" };
 
-export default function ChefEventPage({ params }: PageProps<"/chef/events/[id]">) {
+export default function ChefEventPage({ params, searchParams }: PageProps<"/chef/events/[id]">) {
   return (
     <main className="flex-1">
       <Suspense fallback={<Container className="py-12 text-sm text-muted">Loading…</Container>}>
-        <GuestList params={params} />
+        <GuestList params={params} searchParams={searchParams} />
       </Suspense>
     </main>
   );
 }
 
-async function GuestList({ params }: { params: PageProps<"/chef/events/[id]">["params"] }) {
-  const { id } = await params;
-  const user = await requireRole("CHEF", `/chef/events/${id}`);
+async function GuestList({ params, searchParams }: { params: PageProps<"/chef/events/[id]">["params"]; searchParams: PageProps<"/chef/events/[id]">["searchParams"] }) {
+  const [{ id }, sp] = await Promise.all([params, searchParams]);
+  const user = await requireChef(`/chef/events/${id}`);
   const event = await getEventForChef(id, user);
   if (!event) notFound();
+  const publicUrl = appUrl(`/events/${event.id}`);
+  const flash = sp.published === "1" ? "published" : sp.saved === "1" ? "saved" : sp.unpublished === "1" ? "unpublished" : sp.cancelled === "1" ? "cancelled" : null;
 
   const now = new Date();
   const started = event.startsAt <= now;
@@ -61,6 +65,20 @@ async function GuestList({ params }: { params: PageProps<"/chef/events/[id]">["p
       </p>
       <h1 className="font-display mt-3 text-4xl">{event.title}</h1>
       <p className="mt-2 text-muted">{formatEventDateTime(event.startsAt)} · {formatMoney(event.priceCents)} / seat</p>
+      {flash === "published" && (
+        <section role="status" className="mt-5 rounded-2xl border border-accent/40 bg-accent-soft p-5 text-sm">
+          <h2 className="font-display text-2xl">It&apos;s live</h2>
+          <p className="mt-1">Guests can find it on the calendar and request seats. Share the link anywhere you talk to people:</p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <code className="rounded-md bg-surface px-2 py-1 text-xs">{publicUrl}</code>
+            <CopyLinkButton url={publicUrl} />
+          </div>
+          <p className="mt-3 text-xs text-muted">What happens next: you get an email for every request. Guests pay you directly; mark each one paid here to confirm the seat. Confirmed guests get the address by email two days out.</p>
+        </section>
+      )}
+      {flash === "saved" && <p role="status" className="mt-5 rounded-xl bg-accent-soft px-4 py-3 text-sm">Saved.{event.status === "DRAFT" && " Still a draft: guests can't see it until you publish."}</p>}
+      {flash === "unpublished" && <p role="status" className="mt-5 rounded-xl bg-accent-soft px-4 py-3 text-sm">Unpublished. Guests can&apos;t see it until you publish again.</p>}
+      {flash === "cancelled" && <p role="status" className="mt-5 rounded-xl bg-accent-soft px-4 py-3 text-sm">Cancelled. Everyone with a booking has been emailed; refund anyone who had paid.</p>}
       <div className="mt-3 flex flex-wrap gap-1.5">
         <Badge>{event.status.toLowerCase()}</Badge>
         <Badge>{event.mode.toLowerCase().replace("_", " ")}</Badge>
@@ -68,7 +86,8 @@ async function GuestList({ params }: { params: PageProps<"/chef/events/[id]">["p
           {confirmed} of {event.minGuests} minimum confirmed
         </Badge>
         <Badge>{heldSeats(event)} of {event.maxGuests} seats held</Badge>
-        <Link href={`/events/${event.id}`} className="text-xs text-accent underline-offset-2 hover:underline">Public page</Link>
+        <Link href={`/events/${event.id}`} className="text-xs text-accent underline-offset-2 hover:underline">{event.status === "DRAFT" ? "Preview (unpublished)" : "Public page"}</Link>
+        {event.status === "PUBLISHED" && flash !== "published" && <CopyLinkButton url={publicUrl} />}
       </div>
       {!started && event.status !== "CANCELLED" && event.status !== "COMPLETED" && (
         <div className="mt-4 flex flex-wrap items-start gap-2">

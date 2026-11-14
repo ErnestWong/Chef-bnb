@@ -59,7 +59,7 @@ if (process.env.VERCEL_ENV === "production" && process.env.AUTH_DEV_LOGIN === "t
 const ROLE_REFRESH_MS = 2 * 60 * 1000;
 
 // Config is built per request so nothing touches the database at build time.
-export const { handlers, auth, signIn, signOut } = NextAuth(
+export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth(
   (): NextAuthConfig => ({
     ...authConfig,
     adapter: PrismaAdapter(getDb()),
@@ -71,7 +71,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth(
         const checkedAt = (token.rolesCheckedAt as number | undefined) ?? 0;
         if (params.user) {
           token.rolesCheckedAt = Date.now();
-        } else if (token.id && Date.now() - checkedAt > ROLE_REFRESH_MS) {
+        } else if (token.id && (params.trigger === "update" || Date.now() - checkedAt > ROLE_REFRESH_MS)) {
           const fresh = await getDb().user.findUnique({ where: { id: token.id as string }, select: { roles: true } });
           if (fresh) token.roles = fresh.roles;
           token.rolesCheckedAt = Date.now();
