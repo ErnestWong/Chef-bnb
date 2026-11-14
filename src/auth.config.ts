@@ -19,12 +19,14 @@ export const authConfig = {
       if (user) {
         token.id = user.id;
         token.roles = (user as { roles?: Role[] }).roles ?? ["GUEST"];
+        token.phone = (user as { phone?: string | null }).phone ?? null;
       }
       return token;
     },
     session({ session, token }) {
       session.user.id = (token.id as string | undefined) ?? session.user.id;
       session.user.roles = (token.roles as Role[] | undefined) ?? ["GUEST"];
+      session.user.phone = (token.phone as string | null | undefined) ?? null;
       return session;
     },
   },

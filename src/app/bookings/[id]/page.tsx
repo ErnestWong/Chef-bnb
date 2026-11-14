@@ -88,7 +88,7 @@ async function BookingDetails({ params, searchParams }: { params: PageProps<"/bo
             <p className="mt-2 text-sm text-muted">The chef hasn&apos;t added payment details yet; they&apos;ll reach out.</p>
           )}
           <p className="mt-3 text-xs text-muted">
-            Your seats are held until {formatEventDateTime(expiresAt)}; unpaid requests expire then. The chef marks the booking paid once the money arrives, and you&apos;ll get an email when they do.
+            Your seats are held until {formatEventDateTime(expiresAt)}; unpaid requests expire then. The chef marks the booking paid once the money arrives, and you&apos;ll get a text (or an email) when they do.
           </p>
         </section>
       )}
@@ -96,7 +96,7 @@ async function BookingDetails({ params, searchParams }: { params: PageProps<"/bo
       {b.status === "CONFIRMED" && upcoming && (
         <section className="mt-6 rounded-2xl border border-line p-6 text-sm">
           <h2 className="font-display text-2xl">You&apos;re in</h2>
-          <p className="mt-2">Your payment is confirmed. The exact address arrives by email {RULES.ADDRESS_REVEAL_HOURS} hours before the dinner. It&apos;s BYOB — bring something to drink.</p>
+          <p className="mt-2">Your payment is confirmed. The exact address arrives by text {RULES.ADDRESS_REVEAL_HOURS} hours before the dinner. It&apos;s BYOB — bring something to drink.</p>
         </section>
       )}
 

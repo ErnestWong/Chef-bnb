@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { ModerateReviewButton } from "@/components/review-form";
 import { Badge, Container, EmptyState, Stars } from "@/components/ui";
 import { requireRole } from "@/lib/auth/session";
+import { contactLine } from "@/lib/contact";
 import { getDb } from "@/lib/db";
 import { formatEventDay } from "@/lib/format";
 
@@ -33,7 +34,7 @@ async function ReviewList({ searchParams }: { searchParams: PageProps<"/admin/re
     where: show === "removed" ? { removedAt: { not: null } } : { removedAt: null },
     select: {
       id: true, rating: true, body: true, createdAt: true, removedAt: true,
-      author: { select: { name: true, email: true } },
+      author: { select: { name: true, email: true, phone: true } },
       chef: { select: { displayName: true, slug: true } },
       event: { select: { id: true, title: true, startsAt: true } },
     },
@@ -63,7 +64,7 @@ async function ReviewList({ searchParams }: { searchParams: PageProps<"/admin/re
                   <p className="mt-2 text-xs text-muted">
                     <Link href={`/chefs/${r.chef.slug}`} className="hover:text-accent">{r.chef.displayName}</Link> · <Link href={`/events/${r.event.id}`} className="hover:text-accent">{r.event.title}</Link>, {formatEventDay(r.event.startsAt)} · posted {formatEventDay(r.createdAt)}
                   </p>
-                  <p className="mt-1 text-xs text-muted">By {r.author.name ?? "—"} ({r.author.email})</p>
+                  <p className="mt-1 text-xs text-muted">By {r.author.name ?? "—"} ({contactLine(r.author)})</p>
                 </div>
                 <ModerateReviewButton reviewId={r.id} removed={Boolean(r.removedAt)} />
               </div>

@@ -31,6 +31,14 @@ export default auth((req) => {
     return NextResponse.redirect(signIn);
   }
 
+  // Signed in by phone without a name yet: one question before anything a chef will see.
+  // Page loads only; a server action (POST) on a page already gated is fine to run.
+  if (req.method === "GET" && !session.user.name && pathname !== "/signin/name") {
+    const name = new URL("/signin/name", req.nextUrl);
+    name.searchParams.set("callbackUrl", pathname + search);
+    return NextResponse.redirect(name);
+  }
+
   if (pathname.startsWith("/admin") && !hasRole(session.user.roles, "ADMIN")) {
     return NextResponse.rewrite(new URL("/not-found", req.nextUrl), { status: 404 });
   }
@@ -43,5 +51,5 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/signin", "/admin/:path*", "/chef/:path*", "/account/:path*", "/bookings/:path*", "/events/:id/book"],
+  matcher: ["/signin", "/signin/name", "/admin/:path*", "/chef/:path*", "/account/:path*", "/bookings/:path*", "/events/:id/book"],
 };

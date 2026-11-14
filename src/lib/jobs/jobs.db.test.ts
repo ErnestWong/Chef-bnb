@@ -2,7 +2,9 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { BookingStatus, EventStatus } from "@/generated/prisma/enums";
 import { createPrismaClient, type Db } from "@/lib/db";
-import { MemoryTransport, createMailer, type Mailer } from "@/lib/email/mailer";
+import { MemoryTransport, createMailer } from "@/lib/email/mailer";
+import { createMessenger, type Messenger } from "@/lib/messaging";
+import { MemorySmsTransport, createSmsSender } from "@/lib/sms/sender";
 import { RULES } from "@/lib/bookings/rules";
 import { runJobs } from "./run-jobs";
 import { UNDER_MINIMUM_REASON } from "./go-no-go";
@@ -12,11 +14,14 @@ import { ENDED_UNPAID_NOTE } from "./close-events";
 const url = process.env.TEST_DATABASE_URL;
 const HOUR = 3600 * 1000;
 const ADDRESS = "742 Evergreen Terrace, Apt 3";
+const PHONE_GUEST = 5;
+const PHONE = `+1212555${String(Date.now() % 10000).padStart(4, "0")}`;
 
 describe.skipIf(!url)("scheduled jobs against Postgres", () => {
   let db: Db;
-  let mailer: Mailer;
+  let messenger: Messenger;
   let transport: MemoryTransport;
+  let texts: MemorySmsTransport;
   const tag = `jobs-${Date.now()}`;
   const now = new Date();
   const at = (hours: number) => new Date(now.getTime() + hours * HOUR);
@@ -55,11 +60,16 @@ describe.skipIf(!url)("scheduled jobs against Postgres", () => {
   beforeAll(async () => {
     db = createPrismaClient(url);
     transport = new MemoryTransport();
-    mailer = createMailer(transport, "Covers <test@example.test>");
+    texts = new MemorySmsTransport();
+    messenger = createMessenger(createMailer(transport, "Covers <test@example.test>"), createSmsSender(texts));
     const chefUser = await db.user.create({ data: { email: chefEmail, name: "Casa Wong", roles: ["GUEST", "CHEF"] } });
     chefId = (await db.chefProfile.create({ data: { userId: chefUser.id, displayName: "Casa Wong", slug: tag, bio: "x", status: "APPROVED", paymentHandle: "@casa" } })).id;
     venueId = (await db.venue.create({ data: { ownerUserId: chefUser.id, address: ADDRESS, neighborhood: "Flushing", borough: "QUEENS", crossStreets: "Main St & Roosevelt Ave", lat: 40.76, lng: -73.83, capacity: 10 } })).id;
-    for (let n = 1; n <= 10; n++) guests[n] = (await db.user.create({ data: { email: guestEmail(n), name: `Guest ${n}` } })).id;
+    // Guest 5 signed in by phone and has no email: their address reveal must go out as a text.
+    for (let n = 1; n <= 10; n++) {
+      const data = n === PHONE_GUEST ? { phone: PHONE, phoneVerifiedAt: now, name: `Guest ${n}` } : { email: guestEmail(n), name: `Guest ${n}` };
+      guests[n] = (await db.user.create({ data })).id;
+    }
 
     // Expiry: one stale request, one fresh.
     await makeEvent("expire", { startsAt: at(24 * 7) });
@@ -87,7 +97,7 @@ describe.skipIf(!url)("scheduled jobs against Postgres", () => {
 
   afterAll(async () => {
     await db.event.deleteMany({ where: { chefId } });
-    await db.user.deleteMany({ where: { email: { startsWith: `${tag}-` } } });
+    await db.user.deleteMany({ where: { OR: [{ email: { startsWith: `${tag}-` } }, { phone: PHONE }] } });
     await db.$disconnect();
   });
 
@@ -95,13 +105,14 @@ describe.skipIf(!url)("scheduled jobs against Postgres", () => {
   const event = (key: string) => db.event.findUniqueOrThrow({ where: { id: events[key] } });
 
   it("one run does every due thing exactly once", async () => {
-    const report = await runJobs(db, mailer, now);
+    const report = await runJobs(db, messenger, now);
     expect(report.jobs.expireRequests).toEqual({ processed: 1, emails: 1, errors: [] });
     expect(report.jobs.goNoGo).toEqual({ processed: 2, emails: 3, errors: [] });
     expect(report.jobs.revealAddresses).toEqual({ processed: 1, emails: 1, errors: [] });
     expect(report.jobs.closeEvents).toEqual({ processed: 1, emails: 2, errors: [] });
     expect(report.jobs.requestReviews).toEqual({ processed: 1, emails: 1, errors: [] });
-    expect(transport.sent).toHaveLength(8);
+    expect(transport.sent).toHaveLength(7);
+    expect(texts.sent).toHaveLength(1);
   });
 
   it("expired the stale request only, by the system, with a log row", async () => {
@@ -135,9 +146,9 @@ describe.skipIf(!url)("scheduled jobs against Postgres", () => {
     expect(ok.status).toBe("PUBLISHED");
     expect(ok.goNoGoCheckedAt).toEqual(now);
     expect((await booking("ok-paid")).addressSentAt).toEqual(now);
-    const [email] = transport.to(guestEmail(5));
-    expect(email.subject).toMatch(/^Where to go/);
-    expect(email.text).toContain(ADDRESS);
+    const [text] = texts.to(PHONE);
+    expect(text.body).toContain(ADDRESS);
+    expect(transport.to(guestEmail(5))).toHaveLength(0);
   });
 
   it("left the far-off dinner alone and kept its address private", async () => {
@@ -145,7 +156,8 @@ describe.skipIf(!url)("scheduled jobs against Postgres", () => {
     expect((await booking("far-paid")).addressSentAt).toBeNull();
     expect(transport.to(guestEmail(6))).toHaveLength(0);
     const leaked = transport.sent.filter((e) => e.text.includes(ADDRESS) || e.html.includes(ADDRESS));
-    expect(leaked.map((e) => e.to)).toEqual([guestEmail(5)]);
+    expect(leaked).toHaveLength(0);
+    expect(texts.sent.filter((t) => t.body.includes(ADDRESS)).map((t) => t.to)).toEqual([PHONE]);
   });
 
   it("closed the finished dinner, expired its unpaid request, and asked the chef to mark attendance", async () => {
@@ -167,10 +179,11 @@ describe.skipIf(!url)("scheduled jobs against Postgres", () => {
 
   it("a second run changes nothing and sends nothing", async () => {
     const before = transport.sent.length;
-    const report = await runJobs(db, mailer, new Date(now.getTime() + 60_000));
+    const report = await runJobs(db, messenger, new Date(now.getTime() + 60_000));
     for (const [name, r] of Object.entries(report.jobs)) if (name !== "pruneRateLimits") expect(r).toEqual({ processed: 0, emails: 0, errors: [] });
     expect(report.jobs.pruneRateLimits.errors).toEqual([]);
     expect(transport.sent).toHaveLength(before);
+    expect(texts.sent).toHaveLength(1);
     const logs = await db.bookingLog.count({ where: { booking: { eventId: { in: Object.values(events) } } } });
     expect(logs).toBe(4); // stale→expired, 2× under→cancelled, done-unpaid→expired; none from the second pass
   });

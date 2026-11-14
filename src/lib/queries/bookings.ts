@@ -85,7 +85,7 @@ const CHEF_EVENT_SELECT = {
       createdAt: true,
       paidMarkedAt: true,
       // Private to the chef of this event (and admin).
-      guest: { select: { id: true, name: true, email: true } },
+      guest: { select: { id: true, name: true, email: true, phone: true } },
     },
     orderBy: { createdAt: "asc" },
   },

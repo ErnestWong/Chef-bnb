@@ -1,6 +1,6 @@
 import type { Db } from "@/lib/db";
 import { applyTransition } from "@/lib/bookings/transition";
-import type { Mailer } from "@/lib/email/mailer";
+import type { Messenger } from "@/lib/messaging";
 import { notifyMarkAttendance, notifyRequestExpired } from "@/lib/email/notify";
 import { emptyResult, errorMessage } from "./shared";
 import type { JobResult } from "./types";
@@ -12,7 +12,7 @@ export const ENDED_UNPAID_NOTE = "Unpaid when the dinner ended";
  * expired (the seat was never confirmed); the chef is asked to mark
  * attendance. Idempotent through the event status.
  */
-export async function closeEvents(db: Db, mailer: Mailer, now = new Date()): Promise<JobResult> {
+export async function closeEvents(db: Db, messenger: Messenger, now = new Date()): Promise<JobResult> {
   const result = emptyResult();
   const started = await db.event.findMany({ where: { status: "PUBLISHED", startsAt: { lte: now } }, select: { id: true, startsAt: true, durationMin: true } });
   const due = started.filter((e) => e.startsAt.getTime() + e.durationMin * 60_000 <= now.getTime());
@@ -29,9 +29,9 @@ export async function closeEvents(db: Db, mailer: Mailer, now = new Date()): Pro
       });
       if (!outcome) continue;
       result.processed++;
-      if (await notifyMarkAttendance(db, mailer, id)) result.emails++;
+      if (await notifyMarkAttendance(db, messenger, id)) result.emails++;
       for (const bookingId of outcome.expired) {
-        if (await notifyRequestExpired(db, mailer, bookingId, now)) result.emails++;
+        if (await notifyRequestExpired(db, messenger, bookingId, now)) result.emails++;
       }
     } catch (err) {
       result.errors.push(`${id}: ${errorMessage(err)}`);

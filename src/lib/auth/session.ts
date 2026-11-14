@@ -7,7 +7,9 @@ import { hasRole } from "./roles";
 
 export type CurrentUser = {
   id: string;
-  email: string;
+  /** Null for guests who signed in by phone and never added one. Chefs always have one. */
+  email: string | null;
+  phone: string | null;
   name: string | null;
   image: string | null;
   roles: Role[];
@@ -23,8 +25,8 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   await connection();
   const session = await auth();
   const u = session?.user;
-  if (!u?.id || !u.email) return null;
-  return { id: u.id, email: u.email, name: u.name ?? null, image: u.image ?? null, roles: u.roles ?? ["GUEST"] };
+  if (!u?.id) return null;
+  return { id: u.id, email: u.email ?? null, phone: u.phone ?? null, name: u.name ?? null, image: u.image ?? null, roles: u.roles ?? ["GUEST"] };
 }
 
 /** Redirects to sign-in (and back) when there is no session. */

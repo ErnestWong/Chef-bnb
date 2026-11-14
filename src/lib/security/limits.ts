@@ -6,6 +6,10 @@ export const LIMITS = {
   signInPerIp: { limit: 20, windowSeconds: 15 * 60 },
   /** Sign-in attempts for one email address, from anywhere. */
   signInPerEmail: { limit: 10, windowSeconds: 60 * 60 },
+  /** Login codes sent to one phone number (each costs money and a carrier message). */
+  codesPerPhone: { limit: 5, windowSeconds: 60 * 60 },
+  /** Code checks for one phone number: six digits, so guessing must stay expensive. */
+  codeChecksPerPhone: { limit: 8, windowSeconds: 15 * 60 },
   /** Seat requests, cancellations and chef booking decisions by one signed-in user. */
   bookingActionsPerUser: { limit: 30, windowSeconds: 60 * 60 },
   /** Chef applications (including re-applications) by one user. */
