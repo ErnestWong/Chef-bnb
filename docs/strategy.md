@@ -316,6 +316,7 @@ Durations assume one engineer part-time plus your evenings; the gates matter mor
 - [ ] Vetting bar: what credentials or trial dinner does a chef need to pass?
 - [ ] Name and domain.
 - [ ] Phone-first sign-in (decided 2026-11-14): confirm whether to add an emailed-code fallback for guests without a US-reachable phone (tourists), and whether chefs may sign in by email once Google or an email code exists.
+- [ ] Terms and privacy (drafted 2026-11-14 at `/terms`, `/privacy`): lawyer to confirm the refund rule when a guest cancels (today: chef's call), the liability cap, and what account deletion keeps.
 
 ## Sources
 

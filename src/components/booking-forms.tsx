@@ -1,9 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useState } from "react";
 import type { BookingType } from "@/generated/prisma/enums";
 import { requestSeatsAction, transitionBookingAction, type ActionResult } from "@/app/actions/bookings";
 import { RULES } from "@/lib/bookings/rules";
+import { HOUSE_RULES_SHORT } from "@/lib/policies";
 
 const field = "rounded-md border border-line bg-surface px-3 py-2 text-sm";
 
@@ -89,6 +91,10 @@ export function RequestSeatsForm({ event }: { event: EventForBooking }) {
       </button>
       <p className="text-xs text-muted">
         Nothing is charged here. You&apos;ll get the chef&apos;s payment details next; the seat is held for {RULES.REQUEST_EXPIRY_HOURS} hours while you pay.
+      </p>
+      <p className="text-xs text-muted">
+        House rules: {HOUSE_RULES_SHORT} By requesting you agree to the{" "}
+        <Link href="/terms" className="text-accent underline-offset-2 hover:underline">terms</Link>.
       </p>
     </form>
   );

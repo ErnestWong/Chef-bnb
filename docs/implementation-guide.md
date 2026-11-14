@@ -87,7 +87,7 @@ In dependency order. Items 1–4 unblock the agent entirely for the first two mi
 - [ ] **9. Domain** — pick the name, buy it, point DNS at Vercel, add it to Google OAuth redirect URIs and Resend. (M9)
 - [ ] **10. Content** — 3–5 real chef profiles (bios, photos, sample menus) and your own admin pass over them. Casa Wong can be the first. (M9)
 - [ ] **11. Lawyer consult** — runs in parallel with the build; blocks public launch posture, not code. (before launch)
-- [ ] **12. Terms + privacy policy** — draft pages ship in M9; have the lawyer read them. (before launch)
+- [ ] **12. Terms + privacy policy** — drafts live at `/terms` and `/privacy` (2026-11-14); have the lawyer read them. (before launch)
 
 ## Milestones 0–3: foundation
 
@@ -182,6 +182,7 @@ In dependency order. Items 1–4 unblock the agent entirely for the first two mi
 - Optional: Sentry, Vercel Analytics
 - _Done when:_ a stranger can find a real event on the real domain, request seats, and the chef can confirm them.
 - _Status (2026-11-14), security slice (PR #13):_ rate limits backed by a `rate_limits` table (fixed windows, one atomic upsert, shared across instances): sign-in per IP and per email, booking actions, applications, reviews, event saves, admin moderation; the hourly jobs prune old counters. Abuse guards: one active booking per guest per dinner, at most 5 unpaid requests open per guest per day. Rejected chefs can apply again from `/chef` with their earlier answers prefilled; approved, pending and suspended profiles can't. Security headers on every route (CSP, HSTS, frame denial, nosniff, referrer and permissions policies; `X-Powered-By` off). Database: non-local connections must use TLS, pool capped at 5 per instance, 15 s statement timeout. `/api/health` pings the database and reports which integrations are configured. Still open in M9: brand pass 2, terms and privacy, Playwright, domain, real content.
+- _Status (2026-11-14), legal slice:_ `/terms` and `/privacy` ship as plain-language drafts, linked from the footer, the sign-in form, the seat-request form (with a one-line "House rules" summary) and the last step of the chef application (terms for hosts). The house rules on the terms page are built from `RULES` (`src/lib/policies.ts`) so the numbers can't drift from what the code enforces; a unit test checks it. Dinner pages already show BYOB and the table size in "Good to know". The contact address comes from `NEXT_PUBLIC_SUPPORT_EMAIL` (unset until item 9); until then the pages say "reply to any email we send you". Open for the lawyer (item 12): refund rule for guest cancellations (currently the chef's call), the liability cap, and account deletion wording. Still open in M9: brand pass 2, Playwright, domain, real content.
 
 ## Testing and verification
 
