@@ -29,6 +29,8 @@ export type EventFilters = {
   view: "list" | "calendar";
   /** "YYYY-MM" the calendar shows; defaults to the current month. */
   month: string;
+  /** The current month at parse time, so links can leave the default out of the URL. */
+  defaultMonth: string;
 };
 
 type RawParams = Record<string, string | string[] | undefined>;
@@ -45,7 +47,8 @@ export function parseEventFilters(raw: RawParams, now = new Date()): EventFilter
   const parsed = schema.safeParse(input);
   const data = parsed.success ? parsed.data : fallbackParse(input);
 
-  const month = data.month ?? now.toISOString().slice(0, 7);
+  const defaultMonth = now.toISOString().slice(0, 7);
+  const month = data.month ?? defaultMonth;
   return {
     from: data.from ? new Date(`${data.from}T00:00:00-05:00`) : undefined,
     to: data.to ? new Date(`${data.to}T23:59:59-05:00`) : undefined,
@@ -55,8 +58,10 @@ export function parseEventFilters(raw: RawParams, now = new Date()): EventFilter
     maxPriceCents: data.maxPrice ? data.maxPrice * 100 : undefined,
     partySize: data.partySize,
     soloFriendly: data.solo === "1",
-    view: data.view ?? "list",
+    // Calendar is the default: a dinner calendar is the product. ?view=list is the other way.
+    view: data.view ?? "calendar",
     month,
+    defaultMonth,
   };
 }
 
@@ -81,8 +86,8 @@ export function filterQuery(filters: EventFilters, overrides: Partial<Record<str
     maxPrice: filters.maxPrice?.toString(),
     partySize: filters.partySize?.toString(),
     solo: filters.soloFriendly ? "1" : undefined,
-    view: filters.view === "calendar" ? "calendar" : undefined,
-    month: filters.view === "calendar" ? filters.month : undefined,
+    view: filters.view === "list" ? "list" : undefined,
+    month: filters.view === "calendar" && filters.month !== filters.defaultMonth ? filters.month : undefined,
     ...overrides,
   };
   for (const [k, v] of Object.entries(base)) if (v) params.set(k, v);

@@ -27,9 +27,9 @@ describe("parseEventFilters", () => {
     expect(f.cuisine).toBe("korean");
   });
 
-  it("defaults to list view and the current month", () => {
+  it("defaults to calendar view and the current month", () => {
     const f = parseEventFilters({}, now);
-    expect(f.view).toBe("list");
+    expect(f.view).toBe("calendar");
     expect(f.month).toBe("2026-11");
     expect(f.soloFriendly).toBe(false);
   });
@@ -43,7 +43,8 @@ describe("filterQuery", () => {
   it("round-trips and applies overrides", () => {
     const f = parseEventFilters({ borough: "QUEENS", solo: "1" }, now);
     expect(filterQuery(f)).toBe("?borough=QUEENS&solo=1");
-    expect(filterQuery(f, { borough: undefined, view: "calendar", month: "2026-12" })).toBe("?solo=1&view=calendar&month=2026-12");
+    expect(filterQuery(f, { borough: undefined, month: "2026-12" })).toBe("?solo=1&month=2026-12");
+    expect(filterQuery({ ...f, view: "list" }, { borough: undefined })).toBe("?solo=1&view=list");
   });
 
   it("is empty with no filters", () => {
