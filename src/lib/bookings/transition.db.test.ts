@@ -126,7 +126,8 @@ describe.skipIf(!url)("transitionBooking against Postgres", () => {
       requestSeats(db, { eventId: event.id, guestUserId: stranger.id, type: "SEAT", partySize: 1 }),
     ]);
     expect(results[4].status).toBe("fulfilled");
-    for (const r of results) if (r.status === "rejected") expect(r.reason).toMatchObject({ code: "event_not_open" });
+    // One of the guest's four requests may win before the cancel; the rest fail as duplicates or closed.
+    for (const r of results) if (r.status === "rejected") expect(["event_not_open", "already_requested"]).toContain(r.reason.code);
     const bookings = await db.booking.findMany({ where: { eventId: event.id }, include: { logs: true } });
     for (const b of bookings) {
       expect(b.status).toBe("CANCELLED");

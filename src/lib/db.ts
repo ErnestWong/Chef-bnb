@@ -3,6 +3,23 @@ import { PrismaClient } from "@/generated/prisma/client";
 
 export type Db = PrismaClient;
 
+const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
+
+/**
+ * Non-local connections must use TLS: add sslmode=require when the URL says
+ * nothing (Neon's own URLs already do) and refuse one that disables it.
+ */
+export function hardenConnectionString(connectionString: string): string {
+  const url = new URL(connectionString);
+  if (LOCAL_HOSTS.has(url.hostname)) return connectionString;
+  const mode = url.searchParams.get("sslmode");
+  if (mode === "disable" || mode === "allow" || mode === "prefer") {
+    throw new Error(`Refusing a non-local database connection with sslmode=${mode}; use require or stricter.`);
+  }
+  if (!mode) url.searchParams.set("sslmode", "require");
+  return url.toString();
+}
+
 /**
  * Build a Prisma client for the given connection string (pooled DATABASE_URL in
  * the app; TEST_DATABASE_URL in integration tests). Uses node-postgres, which
@@ -15,7 +32,15 @@ export function createPrismaClient(
     throw new Error("DATABASE_URL is not set (see .env.example)");
   }
   return new PrismaClient({
-    adapter: new PrismaPg({ connectionString }),
+    adapter: new PrismaPg({
+      connectionString: hardenConnectionString(connectionString),
+      // Serverless-friendly pool: few connections per instance, nothing held
+      // open for long, and no statement may run away.
+      max: 5,
+      idleTimeoutMillis: 30_000,
+      connectionTimeoutMillis: 10_000,
+      statement_timeout: 15_000,
+    }),
     log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
   });
 }

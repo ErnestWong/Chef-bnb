@@ -151,9 +151,14 @@ function ApplicationClosed({ profile, status }: { profile: ProfileBits; status: 
           <p className="mt-1">{profile.reviewNote}</p>
         </div>
       )}
-      <p className="mt-6 text-sm text-muted">
-        Questions, or something changed? Reply to the email you received and we&apos;ll take another look.
-      </p>
+      {suspended ? (
+        <p className="mt-6 text-sm text-muted">Questions? Reply to the email you received and we&apos;ll talk it through.</p>
+      ) : (
+        <div className="mt-6 flex flex-wrap items-center gap-4">
+          <ButtonLink href="/chef/apply">Apply again</ButtonLink>
+          <span className="text-sm text-muted">Your earlier answers are kept; update what changed.</span>
+        </div>
+      )}
     </>
   );
 }

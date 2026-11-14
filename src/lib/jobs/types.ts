@@ -1,6 +1,6 @@
 /** Shared with the admin UI, so nothing here may import server-only code. */
 
-export const JOB_NAMES = ["expireRequests", "goNoGo", "revealAddresses", "closeEvents", "requestReviews"] as const;
+export const JOB_NAMES = ["expireRequests", "goNoGo", "revealAddresses", "closeEvents", "requestReviews", "pruneRateLimits"] as const;
 export type JobName = (typeof JOB_NAMES)[number];
 
 export const JOB_LABELS: Record<JobName, string> = {
@@ -9,6 +9,7 @@ export const JOB_LABELS: Record<JobName, string> = {
   revealAddresses: "Reveal addresses",
   closeEvents: "Close finished dinners",
   requestReviews: "Request reviews",
+  pruneRateLimits: "Prune rate-limit counters",
 };
 
 export type JobResult = {

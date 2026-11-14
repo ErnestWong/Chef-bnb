@@ -124,4 +124,19 @@ describe.skipIf(!url)("requestSeats against Postgres", () => {
   it("the database rejects max_guests above 10 even if the app doesn't", async () => {
     await expect(makeEvent(11)).rejects.toThrow(/events_max_guests_cap|check constraint/i);
   });
+
+  it("refuses a second active booking by the same guest on one dinner", async () => {
+    const event = await makeEvent(8);
+    await requestSeats(db, { eventId: event.id, guestUserId: guestIds[0], type: "SEAT", partySize: 1 });
+    await expect(requestSeats(db, { eventId: event.id, guestUserId: guestIds[0], type: "GROUP", partySize: 2 })).rejects.toMatchObject({ code: "already_requested" });
+    // Another guest is fine.
+    await requestSeats(db, { eventId: event.id, guestUserId: guestIds[1], type: "SEAT", partySize: 1 });
+  });
+
+  it("caps unpaid requests per guest per day", async () => {
+    const guest = guestIds[7];
+    const events = await Promise.all(Array.from({ length: 6 }, () => makeEvent(8)));
+    for (let i = 0; i < 5; i++) await requestSeats(db, { eventId: events[i].id, guestUserId: guest, type: "SEAT", partySize: 1 });
+    await expect(requestSeats(db, { eventId: events[5].id, guestUserId: guest, type: "SEAT", partySize: 1 })).rejects.toMatchObject({ code: "too_many_requests" });
+  });
 });

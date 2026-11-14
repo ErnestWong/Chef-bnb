@@ -11,6 +11,7 @@ const ERRORS: Record<string, string> = {
   invalid_email: "Enter a valid email address.",
   CredentialsSignin: "That sign-in didn't work. Try again.",
   AccessDenied: "Sign-in is not available right now.",
+  rate_limited: "Too many sign-in attempts. Wait a few minutes and try again.",
 };
 
 export default function SignInPage({ searchParams }: PageProps<"/signin">) {

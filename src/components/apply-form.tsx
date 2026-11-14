@@ -52,7 +52,23 @@ function stepFor(field: string): number {
  * are just display:none) so the final submit carries everything; each
  * "Continue" validates only its own screen with the shared zod schema.
  */
-export function ApplyForm({ cuisines, defaultName }: { cuisines: Cuisine[]; defaultName: string }) {
+export type ApplyDefaults = Partial<{
+  displayName: string;
+  bio: string;
+  credentials: string;
+  instagram: string;
+  website: string;
+  cuisineIds: string[];
+  hosting: "HOME" | "VENUE";
+  homeBorough: string;
+  needsFoh: boolean;
+  needsServers: boolean;
+  paymentHandle: string;
+  paymentNote: string;
+  foodCertNumber: string;
+}>;
+
+export function ApplyForm({ cuisines, defaultName, defaults = {} }: { cuisines: Cuisine[]; defaultName: string; defaults?: ApplyDefaults }) {
   const formRef = useRef<HTMLFormElement>(null);
   const [step, setStep] = useState(0);
   // A server-side rejection lands on the first screen that has a problem.
@@ -65,9 +81,9 @@ export function ApplyForm({ cuisines, defaultName }: { cuisines: Cuisine[]; defa
     return result;
   }, null);
   const [clientErrors, setClientErrors] = useState<FieldErrors>({});
-  const [bioLength, setBioLength] = useState(0);
-  const [picked, setPicked] = useState<string[]>([]);
-  const [hosting, setHosting] = useState<"HOME" | "VENUE">("HOME");
+  const [bioLength, setBioLength] = useState(defaults.bio?.trim().length ?? 0);
+  const [picked, setPicked] = useState<string[]>(defaults.cuisineIds ?? []);
+  const [hosting, setHosting] = useState<"HOME" | "VENUE">(defaults.hosting ?? "HOME");
 
   const serverErrors = state && !state.ok ? state.fields ?? {} : {};
   const errors: FieldErrors = { ...serverErrors, ...clientErrors };
@@ -159,7 +175,7 @@ export function ApplyForm({ cuisines, defaultName }: { cuisines: Cuisine[]; defa
           <p className="mt-1 text-sm text-muted">Guests book the person as much as the menu. Say who you are in your own words.</p>
         </header>
         <Field label="Name guests will see" error={errors.displayName}>
-          <input name="displayName" defaultValue={defaultName} maxLength={60} autoComplete="name" className={fieldClass} />
+          <input name="displayName" defaultValue={defaults.displayName ?? defaultName} maxLength={60} autoComplete="name" className={fieldClass} />
         </Field>
         <Field
           label="About you and your food"
@@ -176,19 +192,20 @@ export function ApplyForm({ cuisines, defaultName }: { cuisines: Cuisine[]; defa
             rows={5}
             maxLength={1200}
             onChange={(e) => setBioLength(e.target.value.trim().length)}
+            defaultValue={defaults.bio}
             placeholder="Oaxacan moles and fresh masa. Eight seats around one long table in Bushwick; tortillas come off the comal while you watch."
             className={fieldClass}
           />
         </Field>
         <Field label="Credentials" hint="Restaurants, school, certificates. Optional, but it speeds up approval." error={errors.credentials}>
-          <input name="credentials" maxLength={300} placeholder="Line cook, 6 years; NYC Food Protection Certificate" className={fieldClass} />
+          <input name="credentials" maxLength={300} defaultValue={defaults.credentials} placeholder="Line cook, 6 years; NYC Food Protection Certificate" className={fieldClass} />
         </Field>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Instagram" hint="Optional" error={errors.instagram}>
-            <input name="instagram" placeholder="@handle" className={fieldClass} />
+            <input name="instagram" placeholder="@handle" defaultValue={defaults.instagram ? `@${defaults.instagram}` : undefined} className={fieldClass} />
           </Field>
           <Field label="Website" hint="Optional" error={errors.website}>
-            <input name="website" type="url" placeholder="https://" className={fieldClass} />
+            <input name="website" type="url" placeholder="https://" defaultValue={defaults.website} className={fieldClass} />
           </Field>
         </div>
       </section>
@@ -241,7 +258,7 @@ export function ApplyForm({ cuisines, defaultName }: { cuisines: Cuisine[]; defa
 
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Home borough" hint="Shown on your profile" error={errors.homeBorough}>
-            <select name="homeBorough" className={fieldClass} defaultValue="">
+            <select name="homeBorough" className={fieldClass} defaultValue={defaults.homeBorough ?? ""}>
               <option value="">Prefer not to say</option>
               {BOROUGHS.map((b) => (
                 <option key={b} value={b}>{BOROUGH_LABELS[b]}</option>
@@ -250,8 +267,8 @@ export function ApplyForm({ cuisines, defaultName }: { cuisines: Cuisine[]; defa
           </Field>
           <div className="flex flex-col gap-2 text-sm">
             <span className="font-medium">Would you want help on the night?</span>
-            <label className="flex items-center gap-2"><input type="checkbox" name="needsFoh" className="accent-accent" /> Front-of-house (greeting, seating, pacing)</label>
-            <label className="flex items-center gap-2"><input type="checkbox" name="needsServers" className="accent-accent" /> Servers</label>
+            <label className="flex items-center gap-2"><input type="checkbox" name="needsFoh" defaultChecked={defaults.needsFoh} className="accent-accent" /> Front-of-house (greeting, seating, pacing)</label>
+            <label className="flex items-center gap-2"><input type="checkbox" name="needsServers" defaultChecked={defaults.needsServers} className="accent-accent" /> Servers</label>
             <span className="text-xs text-muted">Just so we know; nothing is arranged yet.</span>
           </div>
         </div>
@@ -265,14 +282,14 @@ export function ApplyForm({ cuisines, defaultName }: { cuisines: Cuisine[]; defa
         </header>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Venmo or Zelle handle" error={errors.paymentHandle}>
-            <input name="paymentHandle" placeholder="@yourname" maxLength={60} className={fieldClass} />
+            <input name="paymentHandle" placeholder="@yourname" maxLength={60} defaultValue={defaults.paymentHandle} className={fieldClass} />
           </Field>
           <Field label="Payment note" hint="Optional, e.g. “Venmo preferred, within 48 h”" error={errors.paymentNote}>
-            <input name="paymentNote" maxLength={200} className={fieldClass} />
+            <input name="paymentNote" maxLength={200} defaultValue={defaults.paymentNote} className={fieldClass} />
           </Field>
         </div>
         <Field label="NYC Food Protection Certificate number" hint="Optional now; it matters for approval. Leave it blank if you're still getting one." error={errors.foodCertNumber}>
-          <input name="foodCertNumber" maxLength={40} className={`${fieldClass} sm:w-1/2`} />
+          <input name="foodCertNumber" maxLength={40} defaultValue={defaults.foodCertNumber} className={`${fieldClass} sm:w-1/2`} />
         </Field>
 
         <div className="rounded-2xl border border-line bg-surface p-4 text-sm">

@@ -11,6 +11,8 @@ import { transitionBooking, TransitionError } from "@/lib/bookings/transition";
 import { getMailer } from "@/lib/email/mailer";
 import { notifyBookingConfirmed, notifySeatRequested } from "@/lib/email/notify";
 import { revealAddressForBooking } from "@/lib/jobs/reveal-addresses";
+import { LIMITS } from "@/lib/security/limits";
+import { rateLimitMessage } from "@/lib/security/rate-limit";
 
 const requestSchema = z.object({
   eventId: z.string().min(1),
@@ -31,6 +33,8 @@ export async function requestSeatsAction(_prev: ActionResult | null, formData: F
   });
   if (!parsed.success) return { ok: false, error: "Check the booking type and party size." };
   const user = await requireUser(`/events/${parsed.data.eventId}/book`);
+  const limited = await rateLimitMessage(getDb(), `book:user:${user.id}`, LIMITS.bookingActionsPerUser);
+  if (limited) return { ok: false, error: limited };
 
   let bookingId: string;
   try {
@@ -68,6 +72,8 @@ export async function transitionBookingAction(_prev: ActionResult | null, formDa
   });
   if (!parsed.success) return { ok: false, error: "Invalid request." };
   const user = await requireUser();
+  const limited = await rateLimitMessage(getDb(), `book:user:${user.id}`, LIMITS.bookingActionsPerUser);
+  if (limited) return { ok: false, error: limited };
 
   try {
     await transitionBooking(getDb(), {

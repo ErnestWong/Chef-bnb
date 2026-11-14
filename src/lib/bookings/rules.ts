@@ -14,6 +14,8 @@ export const RULES = {
   ADDRESS_REVEAL_HOURS: 48,
   /** Reviews allowed this long after attendance. */
   REVIEW_WINDOW_DAYS: 30,
+  /** Abuse guard: unpaid requests one guest may open in 24 h. */
+  MAX_OPEN_REQUESTS_PER_DAY: 5,
 } as const;
 
 /** The slice of an event the capacity rules need; read under a row lock. */
