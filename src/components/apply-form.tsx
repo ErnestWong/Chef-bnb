@@ -182,7 +182,7 @@ export function ApplyForm({ cuisines, defaultName, needsEmail = false, defaults 
           <input name="displayName" defaultValue={defaults.displayName ?? defaultName} maxLength={60} autoComplete="name" className={fieldClass} />
         </Field>
         <Field
-          label="About you and your food"
+          label="Your table, in your words"
           hint={
             <span className="flex justify-between gap-4">
               <span>What you cook, where you learned it, what a night at your table is like.</span>

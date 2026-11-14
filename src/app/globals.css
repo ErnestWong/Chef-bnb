@@ -1,17 +1,20 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fdf8f1;
-  --surface: #ffffff;
-  --foreground: #1f1a16;
-  --muted: #6f655c;
-  --line: rgba(31, 26, 22, 0.1);
+  /* Covers brand guide, issue 01: paper, ink, muted, terracotta, night. */
+  --background: #f5f1e9;
+  --paper-2: #ebe5d8;
+  --surface: #fbf9f4;
+  --foreground: #1c1917;
+  --muted: #6b655c;
+  --line: #d6cfc0;
   --accent: #c2410c;
-  --accent-soft: rgba(194, 65, 12, 0.1);
+  --accent-soft: #f3d9cb;
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-paper-2: var(--paper-2);
   --color-surface: var(--surface);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
@@ -20,18 +23,19 @@
   --color-accent-soft: var(--accent-soft);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --font-display: var(--font-fraunces);
+  --font-display: var(--font-instrument-serif);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #15110e;
-    --surface: #1e1915;
-    --foreground: #f3ebe2;
-    --muted: #a69c92;
-    --line: rgba(243, 235, 226, 0.12);
+    --background: #17150f;
+    --paper-2: #1f1c15;
+    --surface: #24211a;
+    --foreground: #f5f1e9;
+    --muted: #b5ab98;
+    --line: #3a362c;
     --accent: #fb923c;
-    --accent-soft: rgba(251, 146, 60, 0.14);
+    --accent-soft: rgba(251, 146, 60, 0.16);
   }
 }
 
@@ -43,6 +47,11 @@ body {
 
 .font-display {
   font-family: var(--font-display), Georgia, serif;
-  font-variation-settings: "opsz" 72, "SOFT" 50;
-  letter-spacing: -0.01em;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+
+/* Metadata is always mono: dates, places, counts, prices. */
+.font-mono {
+  font-family: var(--font-mono), ui-monospace, monospace;
 }

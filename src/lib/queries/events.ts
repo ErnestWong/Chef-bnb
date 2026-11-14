@@ -3,7 +3,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import type { Borough } from "@/generated/prisma/enums";
 import { getDb } from "@/lib/db";
 import { ACTIVE_STATUSES } from "@/lib/bookings/transitions";
-import { PUBLIC_EVENT_SELECT, PUBLIC_REVIEW_SELECT } from "./public-select";
+import { PUBLIC_EVENT_SELECT, PUBLIC_PAST_EVENT_SELECT, PUBLIC_REVIEW_SELECT } from "./public-select";
 import { parseEventFilters, type EventFilters } from "./event-filters";
 
 export { parseEventFilters };
@@ -32,12 +32,32 @@ function decorate(
   return { ...event, seatsLeft, soloFriendly: event.allowedBookingTypes.includes("SEAT") };
 }
 
+export type PastEvent = Prisma.EventGetPayload<{ select: typeof PUBLIC_PAST_EVENT_SELECT }> & {
+  averageRating: number | null;
+  reviewCount: number;
+};
+
+/** Finished dinners, most recent first, with their reviews: the "what it's like" view. */
+export async function listPastEvents(limit = 60): Promise<PastEvent[]> {
+  const events = await getDb().event.findMany({
+    where: { status: "COMPLETED" },
+    select: PUBLIC_PAST_EVENT_SELECT,
+    orderBy: { startsAt: "desc" },
+    take: limit,
+  });
+  return events.map((e) => {
+    const count = e.reviews.length;
+    const avg = count ? Math.round((e.reviews.reduce((s, r) => s + r.rating, 0) / count) * 10) / 10 : null;
+    return { ...e, averageRating: avg, reviewCount: count };
+  });
+}
+
 /** Published, upcoming events matching the filters, soonest first. */
 export async function listPublishedEvents(filters: EventFilters, now = new Date()): Promise<PublicEvent[]> {
   const where: Prisma.EventWhereInput = {
     status: "PUBLISHED",
     startsAt: { gte: filters.from && filters.from > now ? filters.from : now, ...(filters.to ? { lte: filters.to } : {}) },
-    ...(filters.borough ? { borough: filters.borough as Borough } : {}),
+    ...(filters.neighborhood ? { venue: { neighborhood: filters.neighborhood } } : filters.borough ? { borough: filters.borough as Borough } : {}),
     ...(filters.cuisine ? { cuisines: { some: { slug: filters.cuisine } } } : {}),
     ...(filters.maxPriceCents ? { priceCents: { lte: filters.maxPriceCents } } : {}),
     ...(filters.soloFriendly ? { allowedBookingTypes: { has: "SEAT" } } : {}),

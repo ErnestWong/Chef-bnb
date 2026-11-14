@@ -9,15 +9,15 @@ export default function Home() {
     <main className="flex-1">
       <section className="border-b border-line">
         <Container className="py-20 text-center sm:py-28">
-          <p className="mb-5 text-xs font-medium uppercase tracking-[0.25em] text-accent">New York City</p>
-          <h1 className="font-display mx-auto max-w-3xl text-5xl leading-[1.05] sm:text-6xl">
-            Dinner parties, cooked by real chefs, in real homes.
+          <p className="mb-5 font-mono text-xs uppercase tracking-[0.25em] text-accent">New York City</p>
+          <h1 className="font-display mx-auto max-w-3xl text-5xl leading-[1.02] sm:text-7xl">
+            Dinner party, without the hosting.
           </h1>
           <p className="mx-auto mt-6 max-w-xl text-lg text-muted">
-            A better night out than a restaurant, easier than hosting. Book a seat, bring your friends, or take the whole table.
+            A chef cooks at home for ten people at most. Book a seat and meet the table, bring your people, or take the whole thing. Bring a bottle.
           </p>
           <div className="mt-10 flex flex-wrap justify-center gap-3">
-            <ButtonLink href="/events">Browse dinners</ButtonLink>
+            <ButtonLink href="/events">See the calendar</ButtonLink>
             <ButtonLink href="/chefs" variant="secondary">
               Meet the chefs
             </ButtonLink>
@@ -28,7 +28,7 @@ export default function Home() {
       <section>
         <Container className="py-16">
           <div className="mb-8 flex items-end justify-between gap-4">
-            <h2 className="font-display text-3xl">Coming up</h2>
+            <h2 className="font-display text-3xl">Pull up a chair.</h2>
             <ButtonLink href="/events" variant="secondary">
               All dinners
             </ButtonLink>
@@ -42,9 +42,9 @@ export default function Home() {
       <section className="border-t border-line">
         <Container className="grid gap-10 py-16 sm:grid-cols-3">
           {[
-            ["Pick a dinner", "Dated events with a fixed price per seat, a set menu and a small table — ten guests at most."],
-            ["Book your way", "Take a solo seat and meet people, bring 2–5 friends, or buy out the whole table for an occasion."],
-            ["Bring a bottle", "Every dinner is BYOB. The exact address arrives by email 48 hours before you sit down."],
+            ["Pick a night", "A date, a menu, a price per seat, a neighborhood. Ten seats at most, so the table talks to itself."],
+            ["Book your way", "Come alone and leave with new numbers, bring two to five friends and sit together, or take the whole table."],
+            ["Bring a bottle", "BYOB, because chefs can't sell drinks at home. The address comes by text 48 hours before, once you're confirmed."],
           ].map(([title, body]) => (
             <div key={title}>
               <h3 className="font-display text-2xl">{title}</h3>
@@ -57,9 +57,9 @@ export default function Home() {
       <section className="border-t border-line bg-surface">
         <Container className="flex flex-wrap items-center justify-between gap-6 py-14">
           <div className="max-w-xl">
-            <p className="mb-3 text-xs font-medium uppercase tracking-[0.25em] text-accent">For chefs</p>
+            <p className="mb-3 font-mono text-xs uppercase tracking-[0.25em] text-accent">For chefs</p>
             <h2 className="font-display text-3xl">Cook for a table of ten.</h2>
-            <p className="mt-2 text-muted">Host ticketed dinners at home. You set the menu and the price; guests pay you directly. Apply in about three minutes.</p>
+            <p className="mt-2 text-muted">Your menu, your price, your kitchen. We fill the seats and guests pay you directly. Applying takes three minutes.</p>
           </div>
           <ButtonLink href="/host" variant="secondary">How hosting works</ButtonLink>
         </Container>
@@ -73,7 +73,7 @@ async function UpcomingEvents() {
   await connection();
   const events = (await listPublishedEvents(parseEventFilters({}))).slice(0, 6);
   if (events.length === 0) {
-    return <EmptyState title="No dinners on the calendar yet">Check back soon — chefs are being onboarded.</EmptyState>;
+    return <EmptyState title="Nothing on the calendar yet">The first chefs are setting their dates. Check back in a week.</EmptyState>;
   }
   return (
     <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">

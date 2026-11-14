@@ -19,7 +19,7 @@ const DEAL = [
   ["Guests pay you directly", "Venmo or Zelle. You mark a booking paid and the seat is confirmed. No platform fee for now."],
   [`${RULES.MAX_GUESTS} guests at most`, "Small tables, home kitchens. Set your own minimum; if it isn't met 72 hours out, the dinner cancels itself and everyone is told."],
   ["BYOB, always", "Nothing is sold or poured by you. Guests bring the bottle; you bring the food."],
-  ["Your address stays private", "Guests see the neighborhood and cross streets. Confirmed guests get the address by email 48 hours before."],
+  ["Your address stays private", "Guests see the neighborhood and cross streets. Confirmed guests get the address by text 48 hours before."],
   ["Reviews build your profile", "Guests who attended can leave an anonymous review. Dinners hosted and ratings show on your page."],
 ] as const;
 

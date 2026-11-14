@@ -11,7 +11,8 @@ export const authConfig = {
   // JWT sessions: required by the Credentials-based dev sign-in, and keeps the
   // proxy's optimistic check free of database reads. Google (later) works with
   // JWT too; the Prisma adapter then stores the OAuth account link.
-  session: { strategy: "jwt" },
+  // A year of "stay signed in": the cookie is refreshed on any visit after a day, so regulars never see the code screen again.
+  session: { strategy: "jwt", maxAge: 365 * 24 * 60 * 60, updateAge: 24 * 60 * 60 },
   providers: [],
   callbacks: {
     jwt({ token, user }) {
