@@ -472,7 +472,8 @@ async function main() {
         mode = p.type === "BUYOUT" ? "BOUGHT_OUT" : "OPEN";
       }
 
-      if (p.status === "ATTENDED") {
+      // The solo attended seat on each completed dinner stays unreviewed, so a guest has a review to leave.
+      if (p.status === "ATTENDED" && p.type !== "SEAT") {
         const bodies = [
           "Warm host, generous portions, left with new friends. Would book again.",
           "Great food and a very relaxed table. Bring more wine than you think.",

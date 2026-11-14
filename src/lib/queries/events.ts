@@ -3,7 +3,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import type { Borough } from "@/generated/prisma/enums";
 import { getDb } from "@/lib/db";
 import { ACTIVE_STATUSES } from "@/lib/bookings/transitions";
-import { PUBLIC_EVENT_SELECT } from "./public-select";
+import { PUBLIC_EVENT_SELECT, PUBLIC_REVIEW_SELECT } from "./public-select";
 import { parseEventFilters, type EventFilters } from "./event-filters";
 
 export { parseEventFilters };
@@ -68,6 +68,11 @@ export async function listUpcomingEventsForChef(chefId: string, now = new Date()
   });
   const held = await seatsHeldByEvent(events.map((e) => e.id));
   return events.map((e) => decorate(e, held.get(e.id) ?? 0));
+}
+
+/** Non-removed reviews of one dinner, anonymous (PUBLIC_REVIEW_SELECT carries no author). */
+export async function listReviewsForEvent(eventId: string) {
+  return getDb().review.findMany({ where: { eventId, removedAt: null }, select: PUBLIC_REVIEW_SELECT, orderBy: { createdAt: "desc" } });
 }
 
 export async function listCuisines() {
