@@ -12,6 +12,11 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
+    // Two projects: pure unit tests run in parallel; the Postgres-backed files share one
+    // database and the jobs sweep scans all of it, so they run one file at a time.
+    projects: [
+      { extends: true, test: { name: "unit", include: ["src/**/*.test.ts", "src/**/*.test.tsx"], exclude: ["**/*.db.test.ts", "**/node_modules/**"] } },
+      { extends: true, test: { name: "db", include: ["src/**/*.db.test.ts"], fileParallelism: false } },
+    ],
   },
 });

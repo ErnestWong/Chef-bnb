@@ -304,6 +304,9 @@ export function ApplyForm({ cuisines, defaultName, defaults = {} }: { cuisines: 
               Applying as <span className="text-foreground">{cuisineNames.join(", ")}</span>, hosting {hosting === "HOME" ? "at home" : "at a venue"}.
             </p>
           )}
+          <p className="mt-3 text-xs text-muted">
+            Sending means you agree to the <a href="/terms#chefs" className="text-accent underline-offset-2 hover:underline">terms for hosts</a>: BYOB, the guest cap, honoring confirmed bookings, and keeping guests&apos; details private.
+          </p>
         </div>
       </section>
 

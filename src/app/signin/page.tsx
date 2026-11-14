@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { devSignIn } from "@/app/actions/auth";
@@ -81,6 +82,9 @@ async function SignInForm({ searchParams }: { searchParams: PageProps<"/signin">
         >
           Continue
         </button>
+        <p className="text-xs text-muted">
+          By continuing you agree to the <Link href="/terms" className="text-accent underline-offset-2 hover:underline">terms</Link> and <Link href="/privacy" className="text-accent underline-offset-2 hover:underline">privacy policy</Link>.
+        </p>
       </form>
       <details className="mt-8 text-xs text-muted">
         <summary className="cursor-pointer">Seeded accounts</summary>
