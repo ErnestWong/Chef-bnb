@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { PastEventCard } from "@/components/event-card";
 import { Container, EmptyState } from "@/components/ui";
@@ -28,6 +29,8 @@ export default function PastEventsPage() {
 }
 
 async function PastList() {
+  // Request-time data: CI builds without DATABASE_URL, so this subtree must not prerender.
+  await connection();
   const events = await listPastEvents();
   if (events.length === 0) {
     return (
