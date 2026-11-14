@@ -30,7 +30,7 @@ async function ApplyOrStatus() {
       where: { userId: user.id },
       select: {
         status: true, displayName: true, bio: true, credentials: true, instagram: true, website: true, homeBorough: true,
-        needsVenue: true, needsFoh: true, needsServers: true, paymentHandle: true, paymentNote: true, foodCertNumber: true, reviewNote: true,
+        needsVenue: true, needsFoh: true, needsServers: true, paymentHandle: true, paymentNote: true, reviewNote: true,
         cuisines: { select: { id: true } },
       },
     }),
@@ -75,7 +75,6 @@ async function ApplyOrStatus() {
                   needsServers: existing.needsServers,
                   paymentHandle: existing.paymentHandle ?? undefined,
                   paymentNote: existing.paymentNote ?? undefined,
-                  foodCertNumber: existing.foodCertNumber ?? undefined,
                 }
               : undefined
           }

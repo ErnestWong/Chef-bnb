@@ -52,6 +52,7 @@ export const PUBLIC_EVENT_SELECT = {
   byob: true,
   byobNote: true,
   dietaryNotes: true,
+  photoUrls: true,
   cuisines: { select: { id: true, name: true, slug: true } },
   venue: { select: PUBLIC_VENUE_SELECT },
   chef: { select: PUBLIC_CHEF_CARD_SELECT },

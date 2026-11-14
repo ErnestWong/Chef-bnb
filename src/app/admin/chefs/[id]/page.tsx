@@ -43,7 +43,6 @@ async function Application({ params }: { params: PageProps<"/admin/chefs/[id]">[
     ["Wants help", [p.needsFoh && "front of house", p.needsServers && "servers"].filter(Boolean).join(", ") || "No"],
     ["Payment handle", p.paymentHandle],
     ["Payment note", p.paymentNote],
-    ["Food Protection Certificate", p.foodCertNumber],
     ["Insurance on file", p.insuranceOnFile ? "Yes" : "No"],
     ["Applied", formatEventDateTime(p.createdAt)],
     ["Events", String(p._count.events)],

@@ -260,6 +260,8 @@ model Event {
   goNoGoCheckedAt     DateTime?     @map("go_no_go_checked_at")
   mode                EventMode     @default(UNSOLD)
   status              EventStatus   @default(DRAFT)
+  /// Chef-supplied photos of the dinner (Blob URLs later; seed uses stock URLs). Public.
+  photoUrls   String[]  @default([]) @map("photo_urls")
   /// Denormalized from venue for discovery filters.
   borough             Borough
   byob                Boolean       @default(true)

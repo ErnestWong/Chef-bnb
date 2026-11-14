@@ -25,7 +25,6 @@ const DEAL = [
 
 const NEEDS = [
   "A kitchen and a table in New York City, yours or a venue you can use",
-  "A NYC Food Protection Certificate, or a plan to get one (it helps approval)",
   "A sample menu and a sentence or two about how you cook",
   "A Venmo or Zelle handle for guests to pay",
 ] as const;

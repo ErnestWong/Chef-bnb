@@ -18,7 +18,6 @@ export const applySchema = z.object({
   needsServers: z.boolean().default(false),
   paymentHandle: z.string().trim().min(2, "Guests pay you directly — add a Venmo or Zelle handle.").max(60),
   paymentNote: z.string().trim().max(200).optional(),
-  foodCertNumber: z.string().trim().max(40).optional(),
 });
 
 export type ApplyInput = z.infer<typeof applySchema>;
@@ -101,7 +100,6 @@ export async function createApplication(db: Db, userId: string, input: ApplyInpu
         needsServers: input.needsServers,
         paymentHandle: input.paymentHandle,
         paymentNote: input.paymentNote || null,
-        foodCertNumber: input.foodCertNumber || null,
         status: "APPLIED",
         cuisines: { set: input.cuisineIds.map((id) => ({ id })) },
       },
@@ -129,7 +127,6 @@ export async function createApplication(db: Db, userId: string, input: ApplyInpu
       needsServers: input.needsServers,
       paymentHandle: input.paymentHandle,
       paymentNote: input.paymentNote || null,
-      foodCertNumber: input.foodCertNumber || null,
       status: "APPLIED",
       cuisines: { connect: input.cuisineIds.map((id) => ({ id })) },
     },
