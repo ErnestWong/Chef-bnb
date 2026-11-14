@@ -53,6 +53,17 @@ export default function Home() {
           ))}
         </Container>
       </section>
+
+      <section className="border-t border-line bg-surface">
+        <Container className="flex flex-wrap items-center justify-between gap-6 py-14">
+          <div className="max-w-xl">
+            <p className="mb-3 text-xs font-medium uppercase tracking-[0.25em] text-accent">For chefs</p>
+            <h2 className="font-display text-3xl">Cook for a table of ten.</h2>
+            <p className="mt-2 text-muted">Host ticketed dinners at home. You set the menu and the price; guests pay you directly. Apply in about three minutes.</p>
+          </div>
+          <ButtonLink href="/host" variant="secondary">How hosting works</ButtonLink>
+        </Container>
+      </section>
     </main>
   );
 }

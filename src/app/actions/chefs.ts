@@ -48,8 +48,9 @@ export async function applyAsChefAction(_prev: FormResult | null, formData: Form
     throw err;
   }
   revalidatePath("/account");
+  revalidatePath("/chef");
   revalidatePath("/admin");
-  redirect("/account?applied=1");
+  redirect("/chef?applied=1");
 }
 
 const reviewSchema = z.object({
