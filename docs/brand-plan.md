@@ -13,7 +13,7 @@ Five decisions that shape everything below:
 1. **The platform is the stage, not the star.** Each chef's identity (Casa Wong's chili-red script, someone else's green) is the color. The platform's own system stays quiet: paper-warm neutrals, one accent, real photos of real tables.
 2. **Guests first, solo and small group.** Voice, imagery and the first ads speak to a 25–38 year old deciding what to do on Thursday night. Chefs are recruited by hand with their own one-page pitch, not by ads.
 3. **The vibe is late-night and a little undone, with a playful streak and serious plating.** Flash photos, candles, mismatched chairs; but the food is shot with care and the booking flow is as tight as Resy.
-4. **Rename before launch.** "Chef-bnb" names the category but reads like a rental and invites an Airbnb trademark letter. Naming lists eight candidates and a one-week test.
+4. **Working name: Covers (decided Nov 14).** "Chef-bnb" read like a rental and invited an Airbnb trademark letter; Family Meal collided with Blue Hill. Covers is the working name pending the USPTO and handle checks in Naming.
 5. **DIY identity, two pieces bought.** Ernest builds the system in Figma and the app. A designer is paid (or traded) for the wordmark and a small illustration set. The $1,000 ad credit goes to Instagram after the first dinners prove the creative.
 
 ## Brand foundations
@@ -30,7 +30,7 @@ The brand's job is trust at a glance: a stranger lands on an event page from an 
 
 Chefs are the second audience: line cooks, sous chefs, culinary grads and existing supper-club hosts who want their own stage without DM chaos. They get a one-page pitch and personal outreach, not the public campaign.
 
-**Positioning.** For New Yorkers who want a better night than another restaurant, [Name] is where you book a seat at a chef's dinner party in a real home: ten seats at most, BYOB, cooked by a working chef. Resy books restaurants, Timeleft books strangers, Eatwith books tourists. We book the dinner party you wish you got invited to.
+**Positioning.** For New Yorkers who want a better night than another restaurant, Covers is where you book a seat at a chef's dinner party in a real home: ten seats at most, BYOB, cooked by a working chef. Resy books restaurants, Timeleft books strangers, Eatwith books tourists. We book the dinner party you wish you got invited to.
 
 **Promise.** Every dinner on the platform is a real chef, a real home, ten people at most, bring your own bottle, address by email 48 hours before. You leave full and knowing someone new.
 
@@ -98,7 +98,7 @@ Borrow the hospitality, not the costume. Casa Wong is the first and best-dressed
 
 ## Naming
 
-Recommendation: test four names this week and pick by November 28, so the wordmark, domain, handles and emails all ship under the real name. Lead candidate: **Family Meal**, with **Covers** and **Ten Seats** close behind.
+Decision (Nov 14): Covers is the working name. Family Meal was the first pick until the Blue Hill collision surfaced. Remaining checks before buying the domain: USPTO class 43, the Instagram handle, the say-it-aloud test. Runners-up if Covers fails a check: **Staff Meal** and **Ten Seats**.
 
 **Why rename.** "Chef-bnb" says the category but reads like a rental listing, and Airbnb has opposed other "-bnb" marks; expect a letter once there's any press. Both chefbnb.com and chef-bnb.com are already registered by others.
 
@@ -106,7 +106,8 @@ Recommendation: test four names this week and pick by November 28, so the wordma
 
 | Name | Why it works | Risk | Domains (DNS checked Nov 14; "free" = no records, confirm at a registrar) |
 | --- | --- | --- | --- |
-| **Family Meal** | The staff meal before service: chefs cooking for people they like. Warm, insider, underground | A former restaurant of that name in Maryland; search USPTO class 43 before buying | familymeal.nyc free; .com, .co, .club taken |
+| **Family Meal** | The staff meal before service: chefs cooking for people they like. Warm, insider, underground | Live NYC collision: Dan Barber's Blue Hill in Greenwich Village now trades as "Family Meal at Blue Hill". Same city, same category; expect SEO and possibly legal friction | familymeal.nyc free; .com, .co, .club taken |
+| **Staff Meal** | Same insider meaning as Family Meal (the crew's meal before service), without the Blue Hill collision. Slightly rougher, which fits | No NYC restaurant or app found under this name; still run the USPTO search | staffmeal.nyc free (registry confirms); .com and .co taken; .club free |
 | **Covers** | Restaurant slang for seats served. One word, confident, sounds like a nightlife brand | Abstract to guests on first hearing; needs the tagline next to it | covers.co and covers.club free; covers.nyc and getcovers.com taken |
 | **Ten Seats** | The product rule as the name: small, scarce, specific | Caps the brand if the rule ever changes | tenseats.nyc free; .com taken |
 | **Saved Seat** | Casa Wong's "we saved you a spot", made the platform's promise | Softer, less distinctive | savedseat.nyc free; .com taken |
@@ -312,7 +313,7 @@ Nine numbers, reviewed every Monday for 30 minutes before the drop email goes ou
 
 ## Decisions and open questions
 
-- [ ] Pick four names from the list to test, and run the one-week test by November 28.
+- [ ] Covers chosen as the working name (Nov 14). Still to do: USPTO class 43 search, Instagram handle, buy covers.co, say-it-aloud test.
 - [ ] Confirm which platform the $1,000 credit is on (Meta or Google). The paid plan assumes Meta.
 - [ ] Name the designer for the wordmark and agree the price or trade.
 - [ ] Confirm Casa Wong photos can be used for the platform's launch visuals, and the credit line.
@@ -324,4 +325,4 @@ Still open, not blocking:
 
 - Does the platform account produce its own chef content, or only repost what chefs post?
 - Does the brand ever mention the 10% fee, or is that chef-facing only until payments move on-platform?
-- Should the chef kit include a printable "as seen on [Name]" table card, or does that feel like advertising at the table?
+- Should the chef kit include a printable "as seen on Covers" table card, or does that feel like advertising at the table?

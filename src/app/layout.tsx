@@ -13,7 +13,7 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: { default: "Chef-bnb", template: "%s · Chef-bnb" },
+  title: { default: "Covers", template: "%s · Covers" },
   description:
     "Ticketed dinner parties cooked by NYC chefs. Book a seat, a group, or the whole table.",
 };

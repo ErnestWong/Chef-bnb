@@ -28,7 +28,7 @@ describe("email templates", () => {
       const text = await render(email.react, { plainText: true });
       expect(email.subject.length).toBeGreaterThan(8);
       expect(html).toContain("<!DOCTYPE html");
-      expect(html).toContain("Chef-bnb");
+      expect(html).toContain("Covers");
       expect(text).not.toMatch(/undefined|NaN|\[object Object\]/);
       expect(html).not.toMatch(/undefined|NaN|\[object Object\]/);
     }
