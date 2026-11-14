@@ -4,11 +4,13 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { TransitionButton } from "@/components/booking-forms";
 import { BOOKING_TYPE_LABELS, BookingStatusBadge } from "@/components/booking-status";
-import { Container } from "@/components/ui";
+import { ReviewForm } from "@/components/review-form";
+import { Container, Stars } from "@/components/ui";
 import { requireUser } from "@/lib/auth/session";
 import { RULES } from "@/lib/bookings/rules";
 import { BOROUGH_LABELS, formatEventDateTime, formatMoney, pluralize } from "@/lib/format";
 import { getBookingForGuest } from "@/lib/queries/bookings";
+import { reviewEligibility } from "@/lib/reviews/reviews";
 
 export const metadata: Metadata = { title: "Booking" };
 
@@ -28,7 +30,10 @@ async function BookingDetails({ params, searchParams }: { params: PageProps<"/bo
   const b = await getBookingForGuest(id, user);
   if (!b) notFound();
   const isNew = sp.new === "1";
-  const upcoming = b.event.startsAt > new Date();
+  const justReviewed = sp.reviewed === "1";
+  const now = new Date();
+  const upcoming = b.event.startsAt > now;
+  const eligibility = reviewEligibility({ guestUserId: b.guestUserId, status: b.status, event: b.event, review: b.review }, user.id, now);
   const cancellable = upcoming && (b.status === "REQUESTED" || b.status === "CONFIRMED");
   const expiresAt = new Date(b.createdAt.getTime() + RULES.REQUEST_EXPIRY_HOURS * 3600 * 1000);
 
@@ -91,7 +96,30 @@ async function BookingDetails({ params, searchParams }: { params: PageProps<"/bo
       {b.status === "CONFIRMED" && upcoming && (
         <section className="mt-6 rounded-2xl border border-line p-6 text-sm">
           <h2 className="font-display text-2xl">You&apos;re in</h2>
-          <p className="mt-2">Your payment is confirmed. Automated address emails are not available yet; the chef needs to share the location privately before the dinner. It&apos;s BYOB — bring something to drink.</p>
+          <p className="mt-2">Your payment is confirmed. The exact address arrives by email {RULES.ADDRESS_REVEAL_HOURS} hours before the dinner. It&apos;s BYOB — bring something to drink.</p>
+        </section>
+      )}
+
+      {b.status === "ATTENDED" && (
+        <section className="mt-6 rounded-2xl border border-line bg-surface p-6">
+          {b.review ? (
+            <>
+              <h2 className="font-display text-2xl">{justReviewed ? "Thanks for the review" : "Your review"}</h2>
+              <div className="mt-3"><Stars rating={b.review.rating} /></div>
+              {b.review.body && <p className="mt-2 text-sm">{b.review.body}</p>}
+              <p className="mt-3 text-xs text-muted">
+                {b.review.removedAt ? "An admin removed this review from the public pages." : <>Shown anonymously on <Link href={`/chefs/${b.event.chef.slug}`} className="text-accent underline-offset-2 hover:underline">{b.event.chef.displayName}&apos;s profile</Link> and the dinner page.</>}
+              </p>
+            </>
+          ) : eligibility.ok ? (
+            <>
+              <h2 className="font-display text-2xl">Leave a review</h2>
+              <p className="mt-1 text-sm text-muted">Anonymous to the chef and to other guests. Open until {formatEventDateTime(eligibility.deadline)}.</p>
+              <div className="mt-4"><ReviewForm bookingId={b.id} chefName={b.event.chef.displayName} /></div>
+            </>
+          ) : (
+            <p className="text-sm text-muted">The review window for this dinner closed on {formatEventDateTime(eligibility.deadline)}.</p>
+          )}
         </section>
       )}
 

@@ -3,10 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { VenueMap } from "@/components/venue-map";
-import { Badge, ButtonLink, Container, Monogram } from "@/components/ui";
+import { Badge, ButtonLink, Container, Monogram, Stars } from "@/components/ui";
 import { formatDuration, formatEventDay, formatEventTime, formatMoney, pluralize } from "@/lib/format";
 import { RULES } from "@/lib/bookings/rules";
-import { getPublicEvent } from "@/lib/queries/events";
+import { getPublicEvent, listReviewsForEvent } from "@/lib/queries/events";
 
 export async function generateMetadata({ params }: PageProps<"/events/[id]">): Promise<Metadata> {
   const event = await getPublicEvent((await params).id);
@@ -31,6 +31,7 @@ async function EventDetails({ params }: { params: PageProps<"/events/[id]">["par
 
   const past = event.status !== "PUBLISHED";
   const soldOut = event.seatsLeft === 0;
+  const reviews = event.status === "COMPLETED" ? await listReviewsForEvent(event.id) : [];
   const courses = Array.isArray(event.menu?.courses) ? (event.menu!.courses as Course[]) : [];
   const types = event.allowedBookingTypes;
 
@@ -107,6 +108,21 @@ async function EventDetails({ params }: { params: PageProps<"/events/[id]">["par
                 </div>
               </div>
             </section>
+
+            {reviews.length > 0 && (
+              <section className="mt-10">
+                <h2 className="font-display text-2xl">What guests said</h2>
+                <p className="mt-1 text-xs text-muted">From guests who attended this dinner. Shown anonymously.</p>
+                <ul className="mt-4 grid gap-4 sm:grid-cols-2">
+                  {reviews.map((r) => (
+                    <li key={r.id} className="rounded-2xl border border-line bg-surface p-4">
+                      <Stars rating={r.rating} />
+                      {r.body && <p className="mt-2 text-sm">{r.body}</p>}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
           </article>
 
           <aside className="flex h-fit flex-col gap-5 rounded-2xl border border-line bg-surface p-6 lg:sticky lg:top-6">

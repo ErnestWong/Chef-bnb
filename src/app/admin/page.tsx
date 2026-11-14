@@ -24,11 +24,12 @@ export default function AdminPage() {
 async function AdminOverview() {
   await requireRole("ADMIN", "/admin");
   const db = getDb();
-  const [pendingChefs, approvedChefs, upcomingEvents, requestedBookings] = await Promise.all([
+  const [pendingChefs, approvedChefs, upcomingEvents, requestedBookings, reviewCount] = await Promise.all([
     db.chefProfile.count({ where: { status: "APPLIED" } }),
     db.chefProfile.count({ where: { status: "APPROVED" } }),
     db.event.count({ where: { status: "PUBLISHED", startsAt: { gt: new Date() } } }),
     db.booking.count({ where: { status: "REQUESTED" } }),
+    db.review.count({ where: { removedAt: null } }),
   ]);
 
   const stats = [
@@ -51,6 +52,9 @@ async function AdminOverview() {
       <div className="mt-8 flex flex-wrap gap-3">
         <Link href="/admin/chefs" className="rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-white hover:opacity-90">
           Review chef applications{pendingChefs > 0 ? ` (${pendingChefs})` : ""}
+        </Link>
+        <Link href="/admin/reviews" className="rounded-full border border-line px-5 py-2.5 text-sm font-medium hover:border-accent">
+          Guest reviews ({reviewCount})
         </Link>
       </div>
       <section className="mt-10">

@@ -21,7 +21,8 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
     "db:local": "node scripts/local-db.mjs",
-    "db:reset": "prisma migrate reset --force"
+    "db:reset": "prisma migrate reset --force",
+    "vercel-build": "prisma migrate deploy && next build"
   },
   "dependencies": {
     "@auth/prisma-adapter": "2.11.3",

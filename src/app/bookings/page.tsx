@@ -7,6 +7,7 @@ import { Container, EmptyState } from "@/components/ui";
 import { requireUser } from "@/lib/auth/session";
 import { formatEventDateTime, formatMoney, pluralize } from "@/lib/format";
 import { listBookingsForGuest } from "@/lib/queries/bookings";
+import { reviewEligibility } from "@/lib/reviews/reviews";
 
 export const metadata: Metadata = { title: "Your bookings" };
 
@@ -43,6 +44,7 @@ async function BookingList() {
       {bookings.map((b) => {
         const upcoming = b.event.startsAt > now;
         const cancellable = upcoming && (b.status === "REQUESTED" || b.status === "CONFIRMED");
+        const review = b.status === "ATTENDED" ? reviewEligibility({ guestUserId: b.guestUserId, status: b.status, event: b.event, review: b.review }, user.id, now) : null;
         return (
           <li key={b.id} className="rounded-2xl border border-line bg-surface p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
@@ -63,6 +65,14 @@ async function BookingList() {
                 <Link href={`/bookings/${b.id}`} className="text-accent underline-offset-2 hover:underline">Details</Link>
               </p>
             )}
+            {review?.ok && (
+              <p className="mt-3 rounded-xl bg-accent-soft px-3 py-2 text-sm">
+                How was it?{" "}
+                <Link href={`/bookings/${b.id}`} className="text-accent underline-offset-2 hover:underline">Leave a review</Link>
+                <span className="text-muted"> · open until {formatEventDateTime(review.deadline)}</span>
+              </p>
+            )}
+            {b.review && !b.review.removedAt && <p className="mt-3 text-xs text-muted">You rated this {b.review.rating} of 5.</p>}
             {cancellable && (
               <div className="mt-3">
                 <TransitionButton bookingId={b.id} to="CANCELLED" label="Cancel booking" returnTo="/bookings" variant="danger" confirmText="Cancel this booking? Refunds, if any, are handled by the chef." />

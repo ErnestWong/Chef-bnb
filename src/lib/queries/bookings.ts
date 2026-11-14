@@ -21,6 +21,9 @@ const GUEST_BOOKING_SELECT = {
   createdAt: true,
   paidMarkedAt: true,
   cancelledAt: true,
+  guestUserId: true,
+  // The guest's own review of this booking (author is the guest; nothing private crosses here).
+  review: { select: { id: true, rating: true, body: true, createdAt: true, removedAt: true } },
   event: {
     select: {
       id: true,

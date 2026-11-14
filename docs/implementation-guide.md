@@ -165,6 +165,7 @@ In dependency order. Items 1–4 unblock the agent entirely for the first two mi
 - Reviews display anonymously on chef profile and event pages; admin can remove a review
 - Chef aggregates (dinners hosted, average rating) and guest dinners-attended as SQL views
 - _Done when:_ a seeded attended booking can leave a review and the chef's average updates.
+- _Status (2026-11-14):_ built. Review form lives on the booking page (reached from the review-request email and "my bookings"), open to the attending guest for 30 days, one per booking (unique index backs it under concurrency); reviews show anonymously on the chef profile and on completed dinner pages; `/admin/reviews` shows authors and removes or restores. Aggregates stay as Prisma group-bys in `src/lib/queries/chefs.ts` rather than SQL views; materialize if pages get slow. Also in this PR: `vercel-build` runs `prisma migrate deploy` before `next build`, so merges no longer need a hand-run migration.
 
 ### M9 — Polish and launch
 
