@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getDb } from "@/lib/db";
 import { requireRole } from "@/lib/auth/session";
-import { getMailer } from "@/lib/email/mailer";
+import { getMessenger } from "@/lib/messaging";
 import { notifyEventCancelled } from "@/lib/email/notify";
 import { CHEF_CANCEL_REASON, EventError, eventSchema, saveEvent, setEventStatus } from "@/lib/events/manage";
 import { LIMITS } from "@/lib/security/limits";
@@ -66,7 +66,7 @@ export async function setEventStatusAction(_prev: FormResult | null, formData: F
   try {
     const { cancelledBookings } = await setEventStatus(getDb(), user.id, parsed.data.eventId, parsed.data.to, parsed.data.reason);
     if (parsed.data.to === "CANCELLED") {
-      await notifyEventCancelled(getDb(), getMailer(), parsed.data.eventId, cancelledBookings, { reason: parsed.data.reason?.trim() || CHEF_CANCEL_REASON, cancelledBy: "chef" });
+      await notifyEventCancelled(getDb(), getMessenger(), parsed.data.eventId, cancelledBookings, { reason: parsed.data.reason?.trim() || CHEF_CANCEL_REASON, cancelledBy: "chef" });
     }
   } catch (err) {
     if (err instanceof EventError) return { ok: false, error: err.message };

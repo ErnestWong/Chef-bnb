@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { signOutAction } from "@/app/actions/auth";
 import { getCurrentUser } from "@/lib/auth/session";
 import { hasRole } from "@/lib/auth/roles";
+import { displayName } from "@/lib/contact";
 
 export function SiteHeader() {
   return (
@@ -48,8 +49,8 @@ async function UserMenu() {
       {hasRole(user.roles, "ADMIN") && <Link href="/admin" className="hover:text-accent">Admin</Link>}
       {hasRole(user.roles, "CHEF") ? <Link href="/chef" className="hover:text-accent">Chef</Link> : <Link href="/host" className="hover:text-accent">Host a dinner</Link>}
       <Link href="/bookings" className="hover:text-accent">Bookings</Link>
-      <Link href="/account" className="max-w-[8rem] truncate font-medium hover:text-accent sm:max-w-[14rem]" title={user.name ?? user.email}>
-        {user.name ?? user.email}
+      <Link href="/account" className="max-w-[8rem] truncate font-medium hover:text-accent sm:max-w-[14rem]" title={displayName(user)}>
+        {displayName(user)}
       </Link>
       <form action={signOutAction}>
         <button type="submit" className="text-muted underline-offset-2 hover:underline">

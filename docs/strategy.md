@@ -109,7 +109,7 @@ The MVP proves one loop: a chef lists a dinner, guests discover and pay for seat
 
 **Chef side — in MVP**
 
-- [ ] Google sign-in, then an intake application (bio, credentials, website/Instagram, cuisine categories, sample menu upload, photos, hosting setup: home or venue, needs FOH/servers/venue — stored now, used later)
+- [ ] Sign-in (decided 2026-11-14: phone number + texted code, email added on the chef application; Google optional later), then an intake application (bio, credentials, website/Instagram, cuisine categories, sample menu upload, photos, hosting setup: home or venue, needs FOH/servers/venue — stored now, used later)
 - [ ] Manual approval by admin before a chef can publish
 - [ ] Create event: date, start time, duration, neighborhood + private address, cuisine tags, menu (text + optional PDF), fixed price per person, min and max guests (max capped at 10), which booking types are allowed (seat / group / full buyout), dietary notes, BYOB guidance (BYOB only; no alcohol sold)
 - [ ] Event dashboard: guest list, headcount vs. minimum, guest dietary notes, message all guests
@@ -121,7 +121,7 @@ The MVP proves one loop: a chef lists a dinner, guests discover and pay for seat
 - [ ] Browse upcoming events: list + calendar view, filters for date, borough/neighborhood, cuisine, price, party size, "solo-friendly"
 - [ ] Event page: menu, chef, neighborhood + nearest intersection on a map, seats left, price
 - [ ] Book: choose solo seat, group of 2–5, or full buyout; request the spot and see the chef's payment instructions; seat confirms once the chef marks it paid; dietary notes
-- [ ] Google sign-in; profile with dinners attended
+- [ ] Phone sign-in; profile with dinners attended
 - [ ] Exact address emailed 24–48 h before
 - [ ] Post-event: star rating + written review, shown anonymously
 
@@ -315,6 +315,7 @@ Durations assume one engineer part-time plus your evenings; the gates matter mor
 - [ ] Max group size for non-buyout bookings: 5, or chef-set?
 - [ ] Vetting bar: what credentials or trial dinner does a chef need to pass?
 - [ ] Name and domain.
+- [ ] Phone-first sign-in (decided 2026-11-14): confirm whether to add an emailed-code fallback for guests without a US-reachable phone (tourists), and whether chefs may sign in by email once Google or an email code exists.
 
 ## Sources
 

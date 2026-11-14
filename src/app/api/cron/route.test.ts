@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const { runJobs } = vi.hoisted(() => ({ runJobs: vi.fn(async () => ({ ranAt: "2026-11-13T13:00:00.000Z", jobs: {} })) }));
 vi.mock("@/lib/jobs/run-jobs", () => ({ runJobs }));
 vi.mock("@/lib/db", () => ({ getDb: () => ({}) }));
-vi.mock("@/lib/email/mailer", () => ({ getMailer: () => ({ transport: { name: "memory" } }) }));
+vi.mock("@/lib/messaging", () => ({ getMessenger: () => ({ email: { transport: { name: "memory" } }, sms: { transport: { name: "memory" } } }) }));
 
 import { GET, POST } from "./route";
 

@@ -17,7 +17,7 @@ const STEPS = [
 
 /** Which schema fields live on which step, so errors land on the right screen. */
 const STEP_FIELDS: readonly (readonly string[])[] = [
-  ["displayName", "bio", "credentials", "website", "instagram"],
+  ["email", "displayName", "bio", "credentials", "website", "instagram"],
   ["cuisineIds", "homeBorough", "hosting", "needsFoh", "needsServers"],
   ["paymentHandle", "paymentNote", "foodCertNumber"],
 ];
@@ -26,6 +26,7 @@ const STEP_FIELDS: readonly (readonly string[])[] = [
 function rawValues(form: HTMLFormElement) {
   const fd = new FormData(form);
   return {
+    email: fd.get("email") || "",
     displayName: fd.get("displayName"),
     bio: fd.get("bio"),
     credentials: fd.get("credentials") || undefined,
@@ -68,7 +69,7 @@ export type ApplyDefaults = Partial<{
   foodCertNumber: string;
 }>;
 
-export function ApplyForm({ cuisines, defaultName, defaults = {} }: { cuisines: Cuisine[]; defaultName: string; defaults?: ApplyDefaults }) {
+export function ApplyForm({ cuisines, defaultName, needsEmail = false, defaults = {} }: { cuisines: Cuisine[]; defaultName: string; needsEmail?: boolean; defaults?: ApplyDefaults }) {
   const formRef = useRef<HTMLFormElement>(null);
   const [step, setStep] = useState(0);
   // A server-side rejection lands on the first screen that has a problem.
@@ -174,6 +175,11 @@ export function ApplyForm({ cuisines, defaultName, defaults = {} }: { cuisines: 
           <h2 className="font-display text-3xl">{STEPS[0].title}</h2>
           <p className="mt-1 text-sm text-muted">Guests book the person as much as the menu. Say who you are in your own words.</p>
         </header>
+        {needsEmail && (
+          <Field label="Email" hint="You signed in by phone. Chefs also need an email: approval notes, menus and anything too long for a text go there." error={errors.email}>
+            <input name="email" type="email" autoComplete="email" required maxLength={120} className={fieldClass} />
+          </Field>
+        )}
         <Field label="Name guests will see" error={errors.displayName}>
           <input name="displayName" defaultValue={defaults.displayName ?? defaultName} maxLength={60} autoComplete="name" className={fieldClass} />
         </Field>

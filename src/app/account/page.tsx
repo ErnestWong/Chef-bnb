@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
+import { contactLine, displayName } from "@/lib/contact";
 import { getDb } from "@/lib/db";
 import { requireUser } from "@/lib/auth/session";
 
@@ -41,12 +42,12 @@ async function AccountDetails({ searchParams }: { searchParams: PageProps<"/acco
             aria-hidden
             className="flex h-14 w-14 items-center justify-center rounded-full bg-accent/15 text-xl font-semibold text-accent"
           >
-            {(user.name ?? user.email).slice(0, 1).toUpperCase()}
+            {displayName(user).slice(0, 1).toUpperCase()}
           </div>
         )}
         <div>
           <p className="text-lg font-medium">{user.name ?? "No name yet"}</p>
-          <p className="text-sm text-muted">{user.email}</p>
+          <p className="text-sm text-muted">{contactLine(user)}</p>
         </div>
       </div>
       <dl className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">

@@ -102,7 +102,7 @@ export default function HostPage() {
           </div>
           <aside className="flex h-fit flex-col gap-4 rounded-2xl border border-line bg-surface p-6">
             <p className="font-display text-2xl">Ready when you are</p>
-            <p className="text-sm text-muted">Sign in with your email, answer three screens, and you&apos;re in the queue. You can publish your first dinner the moment you&apos;re approved.</p>
+            <p className="text-sm text-muted">Sign in with your phone, answer three screens, and you&apos;re in the queue. You can publish your first dinner the moment you&apos;re approved.</p>
             <ButtonLink href="/chef/apply">Start your application</ButtonLink>
           </aside>
         </Container>

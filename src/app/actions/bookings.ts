@@ -8,7 +8,7 @@ import { requireUser } from "@/lib/auth/session";
 import { BookingError, requestSeats } from "@/lib/bookings/request-seats";
 import { RULES } from "@/lib/bookings/rules";
 import { transitionBooking, TransitionError } from "@/lib/bookings/transition";
-import { getMailer } from "@/lib/email/mailer";
+import { getMessenger } from "@/lib/messaging";
 import { notifyBookingConfirmed, notifySeatRequested } from "@/lib/email/notify";
 import { revealAddressForBooking } from "@/lib/jobs/reveal-addresses";
 import { LIMITS } from "@/lib/security/limits";
@@ -50,7 +50,7 @@ export async function requestSeatsAction(_prev: ActionResult | null, formData: F
     if (err instanceof BookingError) return { ok: false, error: err.message };
     throw err;
   }
-  await notifySeatRequested(getDb(), getMailer(), bookingId);
+  await notifySeatRequested(getDb(), getMessenger(), bookingId);
   revalidatePath(`/events/${parsed.data.eventId}`);
   redirect(`/bookings/${bookingId}?new=1`);
 }
@@ -89,9 +89,9 @@ export async function transitionBookingAction(_prev: ActionResult | null, formDa
   if (parsed.data.to === "CONFIRMED") {
     // Tell the guest; if the dinner is already inside the reveal window, send the address too.
     const db = getDb();
-    const mailer = getMailer();
-    await notifyBookingConfirmed(db, mailer, parsed.data.bookingId);
-    await revealAddressForBooking(db, mailer, parsed.data.bookingId);
+    const messenger = getMessenger();
+    await notifyBookingConfirmed(db, messenger, parsed.data.bookingId);
+    await revealAddressForBooking(db, messenger, parsed.data.bookingId);
   }
   const returnTo = parsed.data.returnTo;
   if (returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//")) {

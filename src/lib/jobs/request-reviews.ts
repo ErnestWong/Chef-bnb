@@ -1,5 +1,5 @@
 import type { Db } from "@/lib/db";
-import type { Mailer } from "@/lib/email/mailer";
+import type { Messenger } from "@/lib/messaging";
 import { notifyReviewRequest } from "@/lib/email/notify";
 import { emptyResult, errorMessage } from "./shared";
 import type { JobResult } from "./types";
@@ -9,7 +9,7 @@ import type { JobResult } from "./types";
  * (bookings.review_requested_at) is claimed before sending and released if
  * the send fails, so re-runs never double-send and failures retry.
  */
-export async function requestReviews(db: Db, mailer: Mailer, now = new Date()): Promise<JobResult> {
+export async function requestReviews(db: Db, messenger: Messenger, now = new Date()): Promise<JobResult> {
   const result = emptyResult();
   const due = await db.booking.findMany({ where: { status: "ATTENDED", reviewRequestedAt: null }, select: { id: true } });
   for (const { id } of due) {
@@ -17,7 +17,7 @@ export async function requestReviews(db: Db, mailer: Mailer, now = new Date()): 
       const claim = await db.booking.updateMany({ where: { id, status: "ATTENDED", reviewRequestedAt: null }, data: { reviewRequestedAt: now } });
       if (claim.count === 0) continue;
       result.processed++;
-      if (await notifyReviewRequest(db, mailer, id)) {
+      if (await notifyReviewRequest(db, messenger, id)) {
         result.emails++;
       } else {
         await db.booking.updateMany({ where: { id, reviewRequestedAt: now }, data: { reviewRequestedAt: null } });

@@ -4,6 +4,8 @@ import type { ChefStatus } from "@/generated/prisma/enums";
 import { BOROUGHS } from "@/lib/queries/event-filters";
 
 export const applySchema = z.object({
+  /** Required when the applicant signed in by phone and has no email yet; the action enforces that. */
+  email: z.email("Enter the email we'll use for your application.").optional().or(z.literal("")),
   displayName: z.string().trim().min(2, "Tell us your name as guests should see it.").max(60),
   bio: z.string().trim().min(40, "A few sentences, at least — guests book the person.").max(1200),
   credentials: z.string().trim().max(300).optional(),
@@ -43,6 +45,25 @@ export class ApplyError extends Error {
       }[code],
     );
     this.name = "ApplyError";
+  }
+}
+
+export class EmailTakenError extends Error {
+  constructor() {
+    super("That email already belongs to another account. Sign in with it, or use a different one.");
+    this.name = "EmailTakenError";
+  }
+}
+
+/** Set a user's email when they had none (phone sign-in). Unique index on users.email decides conflicts. */
+export async function claimEmail(db: Db, userId: string, email: string): Promise<void> {
+  const normalized = email.trim().toLowerCase();
+  try {
+    const { count } = await db.user.updateMany({ where: { id: userId, email: null }, data: { email: normalized } });
+    if (count === 0) return; // already has an email; keep it
+  } catch (err) {
+    if (typeof err === "object" && err && "code" in err && (err as { code?: string }).code === "P2002") throw new EmailTakenError();
+    throw err;
   }
 }
 

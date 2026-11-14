@@ -53,12 +53,13 @@ async function ApplyOrStatus() {
           {existing.reviewNote && <> The note from last time: &ldquo;{existing.reviewNote}&rdquo;</>}
         </p>
       ) : (
-        <p className="mt-2 text-muted">Three short screens. Every chef is reviewed by hand; you&apos;ll get an email with the decision.</p>
+        <p className="mt-2 text-muted">Three short screens. Every chef is reviewed by hand; you&apos;ll hear back by email.</p>
       )}
       <div className="mt-8">
         <ApplyForm
           cuisines={cuisines}
           defaultName={user.name ?? ""}
+          needsEmail={!user.email}
           defaults={
             reapplying
               ? {

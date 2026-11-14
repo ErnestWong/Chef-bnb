@@ -82,12 +82,14 @@ enum BookingStatus {
 /// compatible with the Auth.js Prisma adapter (M2 adds Account/Session tables).
 model User {
   id            String    @id @default(cuid())
-  email         String    @unique
+  /// Optional since phone sign-in: chefs always have one, guests may not.
+  email         String?   @unique
   emailVerified DateTime? @map("email_verified")
   name          String?
   image         String?
-  /// PRIVATE
-  phone         String?
+  /// PRIVATE. E.164 (+12125551234). The sign-in identity for most guests.
+  phone           String?   @unique
+  phoneVerifiedAt DateTime? @map("phone_verified_at")
   roles         Role[]    @default([GUEST])
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")

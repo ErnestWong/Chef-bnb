@@ -349,7 +349,7 @@ async function main() {
   for (const [i, name] of guestNames.entries()) {
     guests.push(
       await db.user.create({
-        data: { email: `guest${i + 1}@example.test`, name, emailVerified: new Date() },
+        data: { email: `guest${i + 1}@example.test`, name, emailVerified: new Date(), ...(i === 0 ? { phone: "+12125550101", phoneVerifiedAt: new Date() } : {}) },
       }),
     );
   }

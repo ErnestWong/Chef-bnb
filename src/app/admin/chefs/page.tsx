@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { Badge, Container, EmptyState } from "@/components/ui";
 import { requireRole } from "@/lib/auth/session";
+import { contactLine } from "@/lib/contact";
 import { getDb } from "@/lib/db";
 import { formatEventDay } from "@/lib/format";
 
@@ -30,7 +31,7 @@ async function Queue({ searchParams }: { searchParams: PageProps<"/admin/chefs">
   const show = params.show === "all" ? "all" : "pending";
   const profiles = await getDb().chefProfile.findMany({
     where: show === "pending" ? { status: "APPLIED" } : {},
-    select: { id: true, displayName: true, status: true, createdAt: true, homeBorough: true, user: { select: { email: true } }, cuisines: { select: { id: true, name: true } } },
+    select: { id: true, displayName: true, status: true, createdAt: true, homeBorough: true, user: { select: { email: true, phone: true } }, cuisines: { select: { id: true, name: true } } },
     orderBy: [{ status: "asc" }, { createdAt: "asc" }],
   });
 
@@ -49,7 +50,7 @@ async function Queue({ searchParams }: { searchParams: PageProps<"/admin/chefs">
               <Link href={`/admin/chefs/${p.id}`} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-surface p-4 hover:border-accent">
                 <div>
                   <p className="font-display text-xl">{p.displayName}</p>
-                  <p className="text-sm text-muted">{p.user.email} · applied {formatEventDay(p.createdAt)}</p>
+                  <p className="text-sm text-muted">{contactLine(p.user)} · applied {formatEventDay(p.createdAt)}</p>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {p.cuisines.map((c) => <Badge key={c.id}>{c.name}</Badge>)}

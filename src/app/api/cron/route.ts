@@ -1,5 +1,5 @@
 import { getDb } from "@/lib/db";
-import { getMailer } from "@/lib/email/mailer";
+import { getMessenger } from "@/lib/messaging";
 import { isCronAuthorized } from "@/lib/jobs/cron-auth";
 import { runJobs } from "@/lib/jobs/run-jobs";
 
@@ -12,7 +12,7 @@ async function handle(request: Request) {
   if (!isCronAuthorized(request.headers.get("authorization"), secret)) {
     return Response.json({ error: "Unauthorized" }, { status: 401, headers });
   }
-  const report = await runJobs(getDb(), getMailer());
+  const report = await runJobs(getDb(), getMessenger());
   return Response.json(report, { headers });
 }
 
