@@ -126,7 +126,7 @@ export const { handlers, auth, signIn, signOut, unstable_update: updateSession }
         const checkedAt = (token.rolesCheckedAt as number | undefined) ?? 0;
         if (params.user) {
           token.rolesCheckedAt = Date.now();
-        } else if (token.id && Date.now() - checkedAt > ROLE_REFRESH_MS) {
+        } else if (token.id && (params.trigger === "update" || Date.now() - checkedAt > ROLE_REFRESH_MS)) {
           // Roles, email and name can change without a new sign-in (approval, adding an email on the chef application).
           const fresh = await getDb().user.findUnique({ where: { id: token.id as string }, select: { roles: true, email: true, phone: true, name: true } });
           if (fresh) {

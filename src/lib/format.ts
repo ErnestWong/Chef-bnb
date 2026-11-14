@@ -70,3 +70,8 @@ export const BOROUGH_LABELS = {
 export function pluralize(n: number, singular: string, plural = `${singular}s`): string {
   return `${n} ${n === 1 ? singular : plural}`;
 }
+
+/** Chefs often start their BYOB note with "BYOB —"; the page already labels it, so drop the prefix. */
+export function stripByobLabel(note: string | null | undefined): string {
+  return (note ?? "").replace(/^\s*BYOB\b[\s.:,—–-]*/i, "").trim();
+}

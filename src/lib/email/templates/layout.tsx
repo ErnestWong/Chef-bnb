@@ -1,13 +1,10 @@
 import type { ReactNode } from "react";
 import { Body, Button, Container, Head, Heading, Hr, Html, Link, Preview, Section, Text } from "@react-email/components";
+import { appUrl } from "@/lib/app-url";
 
 export const BRAND = "Covers";
 
-/** Absolute URL for links in emails; NEXT_PUBLIC_APP_URL is the Vercel URL now, the real domain later. */
-export function appUrl(path: string, env: Record<string, string | undefined> = process.env): string {
-  const base = (env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/\/+$/, "");
-  return `${base}${path.startsWith("/") ? path : `/${path}`}`;
-}
+export { appUrl };
 
 const accent = "#c2410c";
 const ink = "#1c1917";

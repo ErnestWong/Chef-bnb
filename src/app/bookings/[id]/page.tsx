@@ -7,12 +7,14 @@ import { BOOKING_TYPE_LABELS, BookingStatusBadge } from "@/components/booking-st
 import { ReviewForm } from "@/components/review-form";
 import { Container, Stars } from "@/components/ui";
 import { requireUser } from "@/lib/auth/session";
-import { RULES } from "@/lib/bookings/rules";
-import { BOROUGH_LABELS, formatEventDateTime, formatMoney, pluralize } from "@/lib/format";
-import { getBookingForGuest } from "@/lib/queries/bookings";
+import { RULES, requestExpiresAt } from "@/lib/bookings/rules";
+import { BOROUGH_LABELS, formatEventDateTime, formatEventDay, formatMoney, pluralize } from "@/lib/format";
+import { getBookingForGuest, getRevealedAddress } from "@/lib/queries/bookings";
 import { reviewEligibility } from "@/lib/reviews/reviews";
 
 export const metadata: Metadata = { title: "Booking" };
+
+const HOUR = 3600 * 1000;
 
 export default function BookingPage({ params, searchParams }: PageProps<"/bookings/[id]">) {
   return (
@@ -35,7 +37,13 @@ async function BookingDetails({ params, searchParams }: { params: PageProps<"/bo
   const upcoming = b.event.startsAt > now;
   const eligibility = reviewEligibility({ guestUserId: b.guestUserId, status: b.status, event: b.event, review: b.review }, user.id, now);
   const cancellable = upcoming && (b.status === "REQUESTED" || b.status === "CONFIRMED");
-  const expiresAt = new Date(b.createdAt.getTime() + RULES.REQUEST_EXPIRY_HOURS * 3600 * 1000);
+  // A hold lasts 48 h or until the dinner starts, whichever comes first.
+  const expiresAt = requestExpiresAt(b.createdAt, b.event.startsAt);
+  const holdEndsAtStart = expiresAt.getTime() === b.event.startsAt.getTime();
+  const soon = expiresAt.getTime() - now.getTime() < 24 * HOUR;
+  // Once the address has been emailed, it also shows here; never before.
+  const revealed = b.status === "CONFIRMED" && upcoming ? await getRevealedAddress(b.id, user) : null;
+  const revealDay = new Date(b.event.startsAt.getTime() - RULES.ADDRESS_REVEAL_HOURS * HOUR);
 
   return (
     <Container className="max-w-2xl py-12">
@@ -87,8 +95,17 @@ async function BookingDetails({ params, searchParams }: { params: PageProps<"/bo
           {!b.event.chef.paymentHandle && (
             <p className="mt-2 text-sm text-muted">The chef hasn&apos;t added payment details yet; they&apos;ll reach out.</p>
           )}
-          <p className="mt-3 text-xs text-muted">
-            Your seats are held until {formatEventDateTime(expiresAt)}; unpaid requests expire then. The chef marks the booking paid once the money arrives, and you&apos;ll get a text (or an email) when they do.
+          <p className="mt-3 text-sm">
+            {soon ? (
+              <span className="font-medium">Pay now: </span>
+            ) : null}
+            {holdEndsAtStart
+              ? `Your seats are held until the dinner starts, ${formatEventDateTime(expiresAt)}.`
+              : `Your seats are held until ${formatEventDateTime(expiresAt)}.`}
+            {soon ? " The chef confirms payments by hand, so the sooner the better." : " Unpaid requests expire then."}
+          </p>
+          <p className="mt-2 text-xs text-muted">
+            Put your name and the dinner in the payment memo. The chef marks the booking paid once the money arrives, and you&apos;ll get a text (or an email) when they do. We&apos;ve also sent you these details.
           </p>
         </section>
       )}
@@ -96,7 +113,32 @@ async function BookingDetails({ params, searchParams }: { params: PageProps<"/bo
       {b.status === "CONFIRMED" && upcoming && (
         <section className="mt-6 rounded-2xl border border-line p-6 text-sm">
           <h2 className="font-display text-2xl">You&apos;re in</h2>
-          <p className="mt-2">Your payment is confirmed. The exact address arrives by text {RULES.ADDRESS_REVEAL_HOURS} hours before the dinner. It&apos;s BYOB — bring something to drink.</p>
+          {revealed ? (
+            <>
+              <p className="mt-2">Your payment is confirmed. Here&apos;s where to go:</p>
+              <p className="mt-3 text-base font-medium">{revealed.address}</p>
+              <p className="text-muted">
+                {b.event.venue.neighborhood}, near {b.event.venue.crossStreets} ·{" "}
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${revealed.address}, New York, NY`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-accent underline-offset-2 hover:underline"
+                >
+                  Open in Maps
+                </a>
+              </p>
+              <p className="mt-3 text-xs text-muted">Also sent to you on {formatEventDateTime(revealed.sentAt)}. Please keep the address to your party.</p>
+            </>
+          ) : (
+            <p className="mt-2">
+              Your payment is confirmed.{" "}
+              {revealDay <= now
+                ? "The exact address goes out by text (or email) inside the last 48 hours and will show here as soon as it's sent."
+                : `The exact address arrives by text (or email) about ${RULES.ADDRESS_REVEAL_HOURS} hours before the dinner, around ${formatEventDay(revealDay)}, and will show here too.`}
+            </p>
+          )}
+          <p className="mt-2">It&apos;s BYOB — bring something to drink.</p>
         </section>
       )}
 

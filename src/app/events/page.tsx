@@ -8,7 +8,7 @@ import { EventFiltersForm } from "@/components/event-filters";
 import { Container, EmptyState } from "@/components/ui";
 import { filterQuery } from "@/lib/queries/event-filters";
 import { listCuisines, listPublishedEvents, parseEventFilters } from "@/lib/queries/events";
-import { pluralize } from "@/lib/format";
+import { dateKey, formatMonth, pluralize } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Dinners" };
 
@@ -34,26 +34,33 @@ async function EventsBrowser({ searchParams }: { searchParams: PageProps<"/event
   const filters = parseEventFilters(await searchParams);
   const [events, cuisines] = await Promise.all([listPublishedEvents(filters), listCuisines()]);
 
+  const inMonth = events.filter((e) => dateKey(e.startsAt).startsWith(filters.month)).length;
   const tab = (view: "list" | "calendar", label: string) => (
     <Link
       href={`/events${filterQuery({ ...filters, view }, view === "list" ? { view: undefined, month: undefined } : {})}`}
       aria-current={filters.view === view ? "page" : undefined}
-      className={`rounded-full px-4 py-1.5 text-sm ${filters.view === view ? "bg-foreground text-background" : "border border-line hover:border-accent"}`}
+      className={`rounded-full px-5 py-2 text-sm font-medium ${filters.view === view ? "bg-foreground text-background" : "border border-line hover:border-accent"}`}
     >
       {label}
     </Link>
   );
 
   return (
-    <div className="mt-8 flex flex-col gap-6">
-      <EventFiltersForm filters={filters} cuisines={cuisines} />
+    <div className="mt-6 flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-muted">{pluralize(events.length, "dinner")}</p>
-        <div className="flex gap-2">
+        <nav className="flex gap-2" aria-label="View">
           {tab("list", "List")}
           {tab("calendar", "Calendar")}
-        </div>
+        </nav>
+        {(filters.view === "list" || inMonth > 0) && (
+          <p className="text-sm text-muted">
+            {filters.view === "calendar"
+              ? `${pluralize(inMonth, "dinner")} in ${formatMonth(new Date(`${filters.month}-15T12:00:00Z`))}`
+              : pluralize(events.length, "dinner")}
+          </p>
+        )}
       </div>
+      <EventFiltersForm filters={filters} cuisines={cuisines} />
       {filters.view === "calendar" ? (
         <EventCalendar events={events} filters={filters} />
       ) : events.length === 0 ? (

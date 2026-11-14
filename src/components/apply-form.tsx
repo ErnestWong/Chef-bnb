@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useRef, useState, type KeyboardEvent } from "react";
+import { useActionState, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { applyAsChefAction, type FieldErrors, type FormResult } from "@/app/actions/chefs";
 import { applySchema } from "@/lib/chefs/apply";
 import { BOROUGH_LABELS } from "@/lib/format";
@@ -86,8 +86,18 @@ export function ApplyForm({ cuisines, defaultName, needsEmail = false, defaults 
   const [picked, setPicked] = useState<string[]>(defaults.cuisineIds ?? []);
   const [hosting, setHosting] = useState<"HOME" | "VENUE">(defaults.hosting ?? "HOME");
 
+  // An error disappears as soon as its field changes; the set is tied to the result (server or
+  // client validation pass) it belongs to, so a new result shows all its errors again.
+  const [dismissed, setDismissed] = useState<{ of: unknown; names: Set<string> }>({ of: null, names: new Set() });
   const serverErrors = state && !state.ok ? state.fields ?? {} : {};
   const errors: FieldErrors = { ...serverErrors, ...clientErrors };
+  const errorsOf = state ?? clientErrors;
+  if (dismissed.of === errorsOf) for (const name of dismissed.names) delete errors[name];
+  function onFieldChange(e: FormEvent<HTMLFormElement>) {
+    const name = (e.target as HTMLInputElement).name;
+    if (!name) return;
+    setDismissed((prev) => ({ of: errorsOf, names: new Set(prev.of === errorsOf ? prev.names : []).add(name) }));
+  }
   const last = STEPS.length - 1;
 
   function validateStep(i: number): boolean {
@@ -138,6 +148,7 @@ export function ApplyForm({ cuisines, defaultName, needsEmail = false, defaults 
       action={action}
       noValidate
       onKeyDown={onKeyDown}
+      onChange={onFieldChange}
       onSubmit={(e) => {
         if (step < last || !validateStep(last)) e.preventDefault();
       }}
@@ -237,8 +248,11 @@ export function ApplyForm({ cuisines, defaultName, needsEmail = false, defaults 
               );
             })}
           </div>
-          <p className="text-xs text-muted">{picked.length === 0 ? "Pick at least one." : `${picked.length} of 4 picked.`}</p>
-          {errors.cuisineIds && <span role="alert" className="text-xs text-red-700 dark:text-red-300">{errors.cuisineIds}</span>}
+          {errors.cuisineIds ? (
+            <span role="alert" className="text-xs text-red-700 dark:text-red-300">{errors.cuisineIds}</span>
+          ) : (
+            <p className="text-xs text-muted">{picked.length === 0 ? "Pick at least one." : `${picked.length} of 4 picked.`}</p>
+          )}
         </fieldset>
 
         <fieldset className="flex flex-col gap-2">

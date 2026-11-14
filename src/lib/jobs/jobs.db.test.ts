@@ -8,8 +8,7 @@ import { MemorySmsTransport, createSmsSender } from "@/lib/sms/sender";
 import { RULES } from "@/lib/bookings/rules";
 import { runJobs } from "./run-jobs";
 import { UNDER_MINIMUM_REASON } from "./go-no-go";
-import { EXPIRY_NOTE } from "./expire-requests";
-import { ENDED_UNPAID_NOTE } from "./close-events";
+import { EXPIRY_NOTE, STARTED_UNPAID_NOTE } from "./expire-requests";
 
 const url = process.env.TEST_DATABASE_URL;
 const HOUR = 3600 * 1000;
@@ -106,16 +105,16 @@ describe.skipIf(!url)("scheduled jobs against Postgres", () => {
 
   it("one run does every due thing exactly once", async () => {
     const report = await runJobs(db, messenger, now);
-    expect(report.jobs.expireRequests).toEqual({ processed: 1, emails: 1, errors: [] });
+    expect(report.jobs.expireRequests).toEqual({ processed: 2, emails: 2, errors: [] });
     expect(report.jobs.goNoGo).toEqual({ processed: 2, emails: 3, errors: [] });
     expect(report.jobs.revealAddresses).toEqual({ processed: 1, emails: 1, errors: [] });
-    expect(report.jobs.closeEvents).toEqual({ processed: 1, emails: 2, errors: [] });
+    expect(report.jobs.closeEvents).toEqual({ processed: 1, emails: 1, errors: [] });
     expect(report.jobs.requestReviews).toEqual({ processed: 1, emails: 1, errors: [] });
     expect(transport.sent).toHaveLength(7);
     expect(texts.sent).toHaveLength(1);
   });
 
-  it("expired the stale request only, by the system, with a log row", async () => {
+  it("expired the stale request (not the fresh one), by the system, with a log row", async () => {
     const stale = await booking("stale");
     expect(stale.status).toBe("EXPIRED");
     const log = stale.logs.filter((l) => l.toStatus === "EXPIRED");
@@ -167,7 +166,7 @@ describe.skipIf(!url)("scheduled jobs against Postgres", () => {
     expect((await booking("done-paid")).status).toBe("CONFIRMED");
     const unpaid = await booking("done-unpaid");
     expect(unpaid.status).toBe("EXPIRED");
-    expect(unpaid.logs.find((l) => l.toStatus === "EXPIRED")).toMatchObject({ actorUserId: null, note: ENDED_UNPAID_NOTE });
+    expect(unpaid.logs.find((l) => l.toStatus === "EXPIRED")).toMatchObject({ actorUserId: null, note: STARTED_UNPAID_NOTE });
     expect(transport.to(guestEmail(8))[0].text).toMatch(/already happened/);
   });
 

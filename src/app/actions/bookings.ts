@@ -9,7 +9,7 @@ import { BookingError, requestSeats } from "@/lib/bookings/request-seats";
 import { RULES } from "@/lib/bookings/rules";
 import { transitionBooking, TransitionError } from "@/lib/bookings/transition";
 import { getMessenger } from "@/lib/messaging";
-import { notifyBookingConfirmed, notifySeatRequested } from "@/lib/email/notify";
+import { notifyBookingCancelledByOther, notifyBookingConfirmed, notifyRequestReceived, notifySeatRequested } from "@/lib/email/notify";
 import { revealAddressForBooking } from "@/lib/jobs/reveal-addresses";
 import { LIMITS } from "@/lib/security/limits";
 import { rateLimitMessage } from "@/lib/security/rate-limit";
@@ -51,6 +51,7 @@ export async function requestSeatsAction(_prev: ActionResult | null, formData: F
     throw err;
   }
   await notifySeatRequested(getDb(), getMessenger(), bookingId);
+  await notifyRequestReceived(getDb(), getMessenger(), bookingId);
   revalidatePath(`/events/${parsed.data.eventId}`);
   redirect(`/bookings/${bookingId}?new=1`);
 }
@@ -75,6 +76,11 @@ export async function transitionBookingAction(_prev: ActionResult | null, formDa
   const limited = await rateLimitMessage(getDb(), `book:user:${user.id}`, LIMITS.bookingActionsPerUser);
   if (limited) return { ok: false, error: limited };
 
+  // Who is cancelling what: read before the transition so the right party can be told after it.
+  const before = await getDb().booking.findUnique({
+    where: { id: parsed.data.bookingId },
+    select: { status: true, guestUserId: true, event: { select: { chef: { select: { userId: true } } } } },
+  });
   try {
     await transitionBooking(getDb(), {
       bookingId: parsed.data.bookingId,
@@ -86,12 +92,18 @@ export async function transitionBookingAction(_prev: ActionResult | null, formDa
     if (err instanceof TransitionError) return { ok: false, error: err.message };
     throw err;
   }
+  const db = getDb();
+  const messenger = getMessenger();
   if (parsed.data.to === "CONFIRMED") {
     // Tell the guest; if the dinner is already inside the reveal window, send the address too.
-    const db = getDb();
-    const messenger = getMessenger();
     await notifyBookingConfirmed(db, messenger, parsed.data.bookingId);
     await revealAddressForBooking(db, messenger, parsed.data.bookingId);
+  }
+  if (parsed.data.to === "CANCELLED" && before) {
+    const byChef = user.id === before.event.chef.userId && user.id !== before.guestUserId;
+    const byGuest = user.id === before.guestUserId;
+    if (before.status === "REQUESTED" && byChef) await notifyBookingCancelledByOther(db, messenger, parsed.data.bookingId, "guest");
+    if (before.status === "CONFIRMED" && byGuest) await notifyBookingCancelledByOther(db, messenger, parsed.data.bookingId, "chef");
   }
   const returnTo = parsed.data.returnTo;
   if (returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//")) {

@@ -6,3 +6,5 @@ export { addressRevealEmail } from "./address-reveal";
 export { reviewRequestEmail } from "./review-request";
 export { chefApplicationDecidedEmail } from "./chef-application-decided";
 export { markAttendanceEmail } from "./mark-attendance";
+export { requestReceivedEmail } from "./request-received";
+export { bookingCancelledEmail } from "./booking-cancelled";

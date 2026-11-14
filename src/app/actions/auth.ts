@@ -153,3 +153,13 @@ export async function devSignIn(formData: FormData): Promise<void> {
 export async function signOutAction(): Promise<void> {
   await signOut({ redirectTo: "/" });
 }
+
+/**
+ * Re-issue the session cookie with roles read fresh from the database. The
+ * "You're approved" screen calls this so a new chef reaches their dashboard
+ * without waiting for the periodic refresh or signing out.
+ */
+export async function refreshSessionAction(): Promise<void> {
+  await updateSession({});
+  redirect("/chef");
+}

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { dateKey, formatDuration, formatEventDateTime, formatMoney, pluralize } from "./format";
+import { dateKey, formatDuration, formatEventDateTime, formatMoney, pluralize, stripByobLabel } from "./format";
+
 
 describe("format", () => {
   it("formats cents as whole dollars when possible", () => {
@@ -23,5 +24,14 @@ describe("format", () => {
   it("pluralizes", () => {
     expect(pluralize(1, "seat")).toBe("1 seat");
     expect(pluralize(3, "seat")).toBe("3 seats");
+  });
+});
+
+describe("stripByobLabel", () => {
+  it("drops a leading BYOB label so the page doesn't say it twice", () => {
+    expect(stripByobLabel("BYOB — nothing is sold or included.")).toBe("nothing is sold or included.");
+    expect(stripByobLabel("BYOB: bring a Lazio red")).toBe("bring a Lazio red");
+    expect(stripByobLabel("Bring mezcal.")).toBe("Bring mezcal.");
+    expect(stripByobLabel(null)).toBe("");
   });
 });

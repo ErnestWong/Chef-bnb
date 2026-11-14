@@ -1,10 +1,12 @@
 import type { AddressRevealProps } from "@/lib/email/templates/address-reveal";
+import type { BookingCancelledProps } from "@/lib/email/templates/booking-cancelled";
 import type { BookingConfirmedProps } from "@/lib/email/templates/booking-confirmed";
 import type { ChefApplicationDecidedProps } from "@/lib/email/templates/chef-application-decided";
 import type { EventCancelledProps } from "@/lib/email/templates/event-cancelled";
 import { appUrl } from "@/lib/email/templates/layout";
 import type { MarkAttendanceProps } from "@/lib/email/templates/mark-attendance";
 import type { RequestExpiredProps } from "@/lib/email/templates/request-expired";
+import type { RequestReceivedProps } from "@/lib/email/templates/request-received";
 import type { ReviewRequestProps } from "@/lib/email/templates/review-request";
 import type { SeatRequestedProps } from "@/lib/email/templates/seat-requested";
 import { RULES } from "@/lib/bookings/rules";
@@ -23,6 +25,19 @@ const sign = (body: string) => `${SITE_NAME}: ${body}`;
 export function seatRequestedText(p: SeatRequestedProps) {
   const what = p.bookingType === "BUYOUT" ? `a buyout for ${p.partySize}` : pluralize(p.partySize, "seat");
   return sign(`${p.guestName} requested ${what} at ${p.eventTitle} (${formatEventDay(p.startsAt)}), ${formatMoney(p.amountCents)}. Mark it paid once the money lands: ${appUrl(`/chef/events/${p.eventId}`)}`);
+}
+
+/** Carries the chef's payment handle: only to the guest who holds the request. */
+export function requestReceivedText(p: RequestReceivedProps) {
+  const to = p.paymentHandle ? `${p.paymentHandle}${p.paymentNote ? ` (${p.paymentNote})` : ""}` : `${p.chefName} (they'll send payment details)`;
+  const what = p.bookingType === "BUYOUT" ? "the table" : pluralize(p.partySize, "seat");
+  return sign(`Pay ${formatMoney(p.amountCents)} to ${to} by ${formatEventDateTime(p.expiresAt)} to hold ${what} at ${p.eventTitle}. Put your name and the dinner in the memo. ${appUrl(`/bookings/${p.bookingId}`)}`);
+}
+
+export function bookingCancelledText(p: BookingCancelledProps) {
+  return p.recipient === "chef"
+    ? sign(`${p.guestName} cancelled their confirmed ${pluralize(p.partySize, "seat")} at ${p.eventTitle} (${formatEventDay(p.startsAt)}); refund ${formatMoney(p.amountCents)} if paid. The seats are back on sale: ${appUrl(`/chef/events/${p.eventId}`)}`)
+    : sign(`${p.chefName} declined your request for ${p.eventTitle} (${formatEventDay(p.startsAt)}). Nothing is held or owed. Find another dinner: ${appUrl("/events")}`);
 }
 
 export function bookingConfirmedText(p: BookingConfirmedProps) {

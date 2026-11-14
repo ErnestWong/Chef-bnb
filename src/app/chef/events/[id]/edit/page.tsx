@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { EventForm } from "@/components/event-form";
 import { Container } from "@/components/ui";
-import { requireRole } from "@/lib/auth/session";
+import { requireChef } from "@/lib/auth/session";
 import { getDb } from "@/lib/db";
 import { listCuisines } from "@/lib/queries/events";
 import { APP_TIME_ZONE } from "@/lib/format";
@@ -29,7 +29,7 @@ function localParts(date: Date): { date: string; time: string } {
 
 async function EditForm({ params }: { params: PageProps<"/chef/events/[id]/edit">["params"] }) {
   const { id } = await params;
-  const user = await requireRole("CHEF", `/chef/events/${id}/edit`);
+  const user = await requireChef(`/chef/events/${id}/edit`);
   const db = getDb();
   const event = await db.event.findFirst({
     where: { id, chef: { userId: user.id } },

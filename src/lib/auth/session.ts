@@ -44,3 +44,15 @@ export async function requireRole(role: Role, returnTo?: string): Promise<Curren
   if (!hasRole(user.roles, role)) notFound();
   return user;
 }
+
+/**
+ * For chef-only pages: anonymous → sign in; signed in without the CHEF role →
+ * /chef, which explains where their application stands. Reads the session,
+ * whose roles are refreshed from the database (src/auth.ts), so a chef approved
+ * moments ago gets in without signing out.
+ */
+export async function requireChef(returnTo: string): Promise<CurrentUser> {
+  const user = await requireUser(returnTo);
+  if (!hasRole(user.roles, "CHEF")) redirect("/chef");
+  return user;
+}

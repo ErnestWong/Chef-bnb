@@ -19,6 +19,10 @@ const all = () => [
   T.chefApplicationDecidedEmail({ chefName: "Casa Wong", decision: "APPROVED", note: null }),
   T.chefApplicationDecidedEmail({ chefName: "Casa Wong", decision: "REJECTED", note: "Send a sample menu next time." }),
   T.markAttendanceEmail({ ...base, confirmedBookings: 4 }),
+  T.requestReceivedEmail({ ...base, bookingType: "GROUP", partySize: 2, amountCents: 11000, paymentHandle: "@casa-wong", paymentNote: "Venmo preferred", expiresAt: new Date("2026-12-04T00:00:00Z") }),
+  T.requestReceivedEmail({ ...base, bookingType: "SEAT", partySize: 1, amountCents: 5500, paymentHandle: null, paymentNote: null, expiresAt: new Date("2026-12-04T00:00:00Z") }),
+  T.bookingCancelledEmail({ ...base, recipient: "guest", partySize: 2, amountCents: 11000 }),
+  T.bookingCancelledEmail({ ...base, recipient: "chef", partySize: 2, amountCents: 11000 }),
 ];
 
 describe("email templates", () => {
@@ -46,6 +50,13 @@ describe("email templates", () => {
     const withAddress = texts.filter((t) => t.includes(ADDRESS));
     expect(withAddress).toHaveLength(1);
     expect(withAddress[0]).toContain("keep the address to your party");
+  });
+
+  it("tells the guest how much, to whom and by when right after they request", async () => {
+    const text = await render(T.requestReceivedEmail({ ...base, bookingType: "GROUP", partySize: 2, amountCents: 11000, paymentHandle: "@casa-wong", paymentNote: null, expiresAt: new Date("2026-12-04T00:00:00Z") }).react, { plainText: true });
+    expect(text).toContain("$110");
+    expect(text).toContain("@casa-wong");
+    expect(text).toContain("Thu, Dec 3");
   });
 
   it("picks the subject by outcome", () => {

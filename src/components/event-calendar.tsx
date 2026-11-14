@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { PublicEvent } from "@/lib/queries/events";
-import { dateKey, formatEventTime, formatMonth } from "@/lib/format";
+import { BOROUGH_LABELS, dateKey, formatEventDay, formatEventTime, formatMoney, formatMonth, pluralize } from "@/lib/format";
 import { filterQuery, type EventFilters } from "@/lib/queries/event-filters";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -32,6 +32,11 @@ export function EventCalendar({ events, filters }: { events: PublicEvent[]; filt
     byDay.set(k, [...(byDay.get(k) ?? []), e]);
   }
 
+  // Where to send people when this month is empty: the next month with a dinner.
+  const monthEnd = `${filters.month}-${String(daysInMonth).padStart(2, "0")}`;
+  const nextWithEvent = events.find((e) => dateKey(e.startsAt) > monthEnd);
+  const today = dateKey(new Date());
+
   const cells: (number | null)[] = [...Array(leading).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
   while (cells.length % 7) cells.push(null);
 
@@ -55,23 +60,77 @@ export function EventCalendar({ events, filters }: { events: PublicEvent[]; filt
         {cells.map((day, i) => {
           const key = day ? `${filters.month}-${String(day).padStart(2, "0")}` : "";
           const dayEvents = day ? byDay.get(key) ?? [] : [];
+          const isToday = key === today;
           return (
-            <div key={i} className={`min-h-24 bg-surface p-2 ${day ? "" : "opacity-40"}`}>
-              {day && <p className="text-xs text-muted">{day}</p>}
-              <ul className="mt-1 flex flex-col gap-1">
+            <div key={i} className={`min-h-24 bg-surface p-2 ${day ? "" : "opacity-40"} ${isToday ? "ring-2 ring-inset ring-accent" : ""}`}>
+              {day && (
+                <p className={`text-xs ${isToday ? "font-semibold text-accent" : "text-muted"}`}>
+                  {day}
+                  {isToday && <span className="sr-only"> (today)</span>}
+                </p>
+              )}
+              <ul className="mt-1 hidden flex-col gap-1 sm:flex">
                 {dayEvents.map((e) => (
                   <li key={e.id}>
                     <Link href={`/events/${e.id}`} className="block truncate rounded-md bg-accent-soft px-1.5 py-1 text-xs text-accent hover:underline" title={e.title}>
-                      <span className="hidden sm:inline">{formatEventTime(e.startsAt)} </span>
-                      {e.title}
+                      {formatEventTime(e.startsAt)} {e.title}
                     </Link>
                   </li>
                 ))}
               </ul>
+              {dayEvents.length > 0 && (
+                <a href={`#day-${key}`} className="mt-1 flex flex-wrap gap-1 sm:hidden" aria-label={`${pluralize(dayEvents.length, "dinner")} on ${formatEventDay(dayEvents[0].startsAt)}`}>
+                  {dayEvents.map((e) => (
+                    <span key={e.id} className="h-2 w-2 rounded-full bg-accent" />
+                  ))}
+                </a>
+              )}
             </div>
           );
         })}
       </div>
+      {byDay.size > 0 && (
+        <ol className="mt-6 divide-y divide-line rounded-2xl border border-line bg-surface">
+          {[...byDay.entries()].map(([key, dayEvents]) => (
+            <li key={key} id={`day-${key}`} className="flex flex-col gap-2 p-4 sm:flex-row sm:gap-6">
+              <p className="w-28 shrink-0 text-sm font-medium text-accent">{formatEventDay(dayEvents[0].startsAt)}</p>
+              <ul className="flex flex-1 flex-col gap-3">
+                {dayEvents.map((e) => (
+                  <li key={e.id}>
+                    <Link href={`/events/${e.id}`} className="group flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                      <span className="min-w-0">
+                        <span className="font-display text-lg leading-tight group-hover:text-accent">{e.title}</span>
+                        <span className="block text-sm text-muted">
+                          {formatEventTime(e.startsAt)} · {e.chef.displayName} · {e.venue.neighborhood}, {BOROUGH_LABELS[e.borough]}
+                        </span>
+                      </span>
+                      <span className="text-sm">
+                        <span className="font-semibold">{formatMoney(e.priceCents)}</span>
+                        <span className="text-muted"> / seat · {e.seatsLeft === 0 ? (e.mode === "BOUGHT_OUT" ? "bought out" : "full") : `${pluralize(e.seatsLeft, "seat")} left`}</span>
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </li>
+          ))}
+        </ol>
+      )}
+      {byDay.size === 0 && (
+        <p className="mt-4 text-sm text-muted">
+          No dinners in {formatMonth(start)}
+          {filters.from || filters.to || filters.borough || filters.cuisine || filters.maxPrice || filters.partySize || filters.soloFriendly ? " match those filters" : ""}.{" "}
+          {nextWithEvent ? (
+            <Link href={`/events${filterQuery(filters, { month: dateKey(nextWithEvent.startsAt).slice(0, 7) })}`} className="text-accent underline-offset-2 hover:underline">
+              Jump to {formatMonth(nextWithEvent.startsAt)} →
+            </Link>
+          ) : (
+            <Link href={`/events${filterQuery(filters, { view: undefined, month: undefined })}`} className="text-accent underline-offset-2 hover:underline">
+              See the full list
+            </Link>
+          )}
+        </p>
+      )}
     </section>
   );
 }

@@ -18,6 +18,16 @@ export const RULES = {
   MAX_OPEN_REQUESTS_PER_DAY: 5,
 } as const;
 
+const HOUR = 3600 * 1000;
+
+/**
+ * When an unpaid request stops holding its seats: 48 h after it was made, or
+ * the dinner's start if that comes first (a hold can't outlive the dinner).
+ */
+export function requestExpiresAt(createdAt: Date, startsAt: Date): Date {
+  return new Date(Math.min(createdAt.getTime() + RULES.REQUEST_EXPIRY_HOURS * HOUR, startsAt.getTime()));
+}
+
 /** The slice of an event the capacity rules need; read under a row lock. */
 export type EventSnapshot = {
   status: EventStatus;

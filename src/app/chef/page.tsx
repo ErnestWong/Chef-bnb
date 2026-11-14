@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { Badge, ButtonLink, Container, EmptyState } from "@/components/ui";
+import { refreshSessionAction } from "@/app/actions/auth";
 import { requireUser } from "@/lib/auth/session";
 import { hasRole } from "@/lib/auth/roles";
 import { formatEventDateTime, formatEventDay, formatMoney, pluralize } from "@/lib/format";
@@ -81,7 +82,7 @@ function ApplicationStatus({ profile, justApplied, approvedPendingSession = fals
   const steps = [
     { title: "Applied", body: `${formatEventDay(profile.createdAt)}. Thanks, ${profile.displayName}.`, state: "done" as const },
     { title: "Review", body: approvedPendingSession ? "Done: you're approved." : "A real person reads every application, usually within a few days.", state: approvedPendingSession ? ("done" as const) : ("current" as const) },
-    { title: "Approved", body: approvedPendingSession ? "Your dashboard unlocks in a moment; refresh if it hasn't." : "You get an email either way. Once approved, you publish your first dinner from here.", state: approvedPendingSession ? ("current" as const) : ("todo" as const) },
+    { title: "Approved", body: approvedPendingSession ? "Your dashboard is ready." : "You get an email either way. Once approved, you publish your first dinner from here.", state: approvedPendingSession ? ("current" as const) : ("todo" as const) },
   ];
   return (
     <>
@@ -91,6 +92,14 @@ function ApplicationStatus({ profile, justApplied, approvedPendingSession = fals
         </p>
       )}
       <h1 className="font-display text-4xl">{approvedPendingSession ? "You're approved" : "Application received"}</h1>
+      {approvedPendingSession && (
+        <form action={refreshSessionAction} className="mt-6 flex flex-wrap items-center gap-3">
+          <button type="submit" className="rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-white hover:opacity-90">
+            Open my dashboard
+          </button>
+          <span className="text-xs text-muted">This refreshes your session so the chef tools unlock.</span>
+        </form>
+      )}
       <ol className="mt-8 flex flex-col gap-0">
         {steps.map((s, i) => (
           <li key={s.title} className="flex gap-4">
