@@ -9,11 +9,11 @@ describe("createMailer", () => {
 
   it("renders html and text and hands both to the transport", async () => {
     const memory = new MemoryTransport();
-    const mailer = createMailer(memory, "Chef-bnb <hello@example.test>");
+    const mailer = createMailer(memory, "Covers <hello@example.test>");
     expect(await mailer.send({ to: "ada@example.test", subject: "Hi", react: hello })).toBe(true);
     expect(memory.sent).toHaveLength(1);
     const [email] = memory.sent;
-    expect(email).toMatchObject({ from: "Chef-bnb <hello@example.test>", to: "ada@example.test", subject: "Hi" });
+    expect(email).toMatchObject({ from: "Covers <hello@example.test>", to: "ada@example.test", subject: "Hi" });
     expect(email.html).toContain("<p>Hello there</p>");
     expect(email.text.trim()).toBe("Hello there");
     expect(memory.to("ada@example.test")).toHaveLength(1);
@@ -39,6 +39,6 @@ describe("transportFromEnv", () => {
   it("falls back to Resend's test sender until EMAIL_FROM is set", () => {
     expect(fromAddress({})).toBe(DEFAULT_FROM);
     expect(fromAddress({ EMAIL_FROM: "  " })).toBe(DEFAULT_FROM);
-    expect(fromAddress({ EMAIL_FROM: "Chef-bnb <hello@chef-bnb.nyc>" })).toBe("Chef-bnb <hello@chef-bnb.nyc>");
+    expect(fromAddress({ EMAIL_FROM: "Covers <hello@covers.co>" })).toBe("Covers <hello@covers.co>");
   });
 });

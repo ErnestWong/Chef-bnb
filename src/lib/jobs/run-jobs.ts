@@ -3,6 +3,7 @@ import type { Mailer } from "@/lib/email/mailer";
 import { closeEvents } from "./close-events";
 import { expireRequests } from "./expire-requests";
 import { goNoGo } from "./go-no-go";
+import { pruneRateLimits } from "./prune-rate-limits";
 import { requestReviews } from "./request-reviews";
 import { revealAddresses } from "./reveal-addresses";
 import { errorMessage } from "./shared";
@@ -10,7 +11,7 @@ import { JOB_NAMES, type JobName, type JobReport, type JobResult } from "./types
 
 type Job = (db: Db, mailer: Mailer, now: Date) => Promise<JobResult>;
 
-const JOBS: Record<JobName, Job> = { expireRequests, goNoGo, revealAddresses, closeEvents, requestReviews };
+const JOBS: Record<JobName, Job> = { expireRequests, goNoGo, revealAddresses, closeEvents, requestReviews, pruneRateLimits };
 
 /**
  * The scheduled sweep (docs/strategy.md, Scheduled jobs), in order: expire

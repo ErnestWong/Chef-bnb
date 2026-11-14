@@ -55,7 +55,7 @@ describe.skipIf(!url)("scheduled jobs against Postgres", () => {
   beforeAll(async () => {
     db = createPrismaClient(url);
     transport = new MemoryTransport();
-    mailer = createMailer(transport, "Chef-bnb <test@example.test>");
+    mailer = createMailer(transport, "Covers <test@example.test>");
     const chefUser = await db.user.create({ data: { email: chefEmail, name: "Casa Wong", roles: ["GUEST", "CHEF"] } });
     chefId = (await db.chefProfile.create({ data: { userId: chefUser.id, displayName: "Casa Wong", slug: tag, bio: "x", status: "APPROVED", paymentHandle: "@casa" } })).id;
     venueId = (await db.venue.create({ data: { ownerUserId: chefUser.id, address: ADDRESS, neighborhood: "Flushing", borough: "QUEENS", crossStreets: "Main St & Roosevelt Ave", lat: 40.76, lng: -73.83, capacity: 10 } })).id;
@@ -168,7 +168,8 @@ describe.skipIf(!url)("scheduled jobs against Postgres", () => {
   it("a second run changes nothing and sends nothing", async () => {
     const before = transport.sent.length;
     const report = await runJobs(db, mailer, new Date(now.getTime() + 60_000));
-    for (const r of Object.values(report.jobs)) expect(r).toEqual({ processed: 0, emails: 0, errors: [] });
+    for (const [name, r] of Object.entries(report.jobs)) if (name !== "pruneRateLimits") expect(r).toEqual({ processed: 0, emails: 0, errors: [] });
+    expect(report.jobs.pruneRateLimits.errors).toEqual([]);
     expect(transport.sent).toHaveLength(before);
     const logs = await db.bookingLog.count({ where: { booking: { eventId: { in: Object.values(events) } } } });
     expect(logs).toBe(4); // stale→expired, 2× under→cancelled, done-unpaid→expired; none from the second pass

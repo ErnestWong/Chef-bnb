@@ -1,11 +1,11 @@
 import type { Db } from "@/lib/db";
 import type { Booking } from "@/generated/prisma/client";
 import type { BookingType, EventMode, EventStatus } from "@/generated/prisma/enums";
-import { decideSeatRequest, type DeclineCode } from "./rules";
+import { RULES, decideSeatRequest, type DeclineCode } from "./rules";
 
 export class BookingError extends Error {
   constructor(
-    public readonly code: DeclineCode | "event_not_found",
+    public readonly code: DeclineCode | "event_not_found" | "already_requested" | "too_many_requests",
     message: string,
   ) {
     super(message);
@@ -53,6 +53,19 @@ export async function requestSeats(
     const row = rows[0];
     if (!row) {
       throw new BookingError("event_not_found", "This dinner no longer exists.");
+    }
+
+    // Abuse guards, per guest: one active booking per dinner, and a cap on
+    // unpaid requests per day so seats can't be held across the site.
+    const [duplicate, openRequests] = await Promise.all([
+      tx.booking.count({ where: { eventId: row.id, guestUserId: input.guestUserId, status: { in: ["REQUESTED", "CONFIRMED"] } } }),
+      tx.booking.count({ where: { guestUserId: input.guestUserId, status: "REQUESTED", createdAt: { gte: new Date(now.getTime() - 24 * 3600 * 1000) } } }),
+    ]);
+    if (duplicate > 0) {
+      throw new BookingError("already_requested", "You already hold seats at this dinner; see your bookings.");
+    }
+    if (openRequests >= RULES.MAX_OPEN_REQUESTS_PER_DAY) {
+      throw new BookingError("too_many_requests", `You can have ${RULES.MAX_OPEN_REQUESTS_PER_DAY} unpaid requests open at a time. Pay for one or cancel one first.`);
     }
 
     const held = await tx.booking.aggregate({

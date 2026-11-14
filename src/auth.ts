@@ -51,6 +51,10 @@ const devProvider = Credentials({
   },
 });
 
+if (process.env.VERCEL_ENV === "production" && process.env.AUTH_DEV_LOGIN === "true") {
+  console.warn("[auth] AUTH_DEV_LOGIN=true in production: anyone can sign in as any email. Unset it before real users arrive.");
+}
+
 /** Roles live in the JWT; re-read them from the database this often so an approval shows up without re-login. */
 const ROLE_REFRESH_MS = 2 * 60 * 1000;
 

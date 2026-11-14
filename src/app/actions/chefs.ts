@@ -8,6 +8,8 @@ import { requireRole, requireUser } from "@/lib/auth/session";
 import { ApplyError, applySchema, createApplication, reviewApplication } from "@/lib/chefs/apply";
 import { getMailer } from "@/lib/email/mailer";
 import { notifyChefDecision } from "@/lib/email/notify";
+import { LIMITS } from "@/lib/security/limits";
+import { rateLimitMessage } from "@/lib/security/rate-limit";
 import type { ActionResult } from "./bookings";
 
 export type FieldErrors = Record<string, string>;
@@ -40,6 +42,8 @@ export async function applyAsChefAction(_prev: FormResult | null, formData: Form
     foodCertNumber: formData.get("foodCertNumber") || undefined,
   });
   if (!parsed.success) return { ok: false, fields: fieldErrors(parsed.error.issues) };
+  const limited = await rateLimitMessage(getDb(), `apply:user:${user.id}`, LIMITS.applyPerUser);
+  if (limited) return { ok: false, error: limited };
 
   try {
     await createApplication(getDb(), user.id, parsed.data);
@@ -60,7 +64,9 @@ const reviewSchema = z.object({
 });
 
 export async function reviewChefAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
-  await requireRole("ADMIN", "/admin/chefs");
+  const admin = await requireRole("ADMIN", "/admin/chefs");
+  const limited = await rateLimitMessage(getDb(), `admin:user:${admin.id}`, LIMITS.adminActionsPerUser);
+  if (limited) return { ok: false, error: limited };
   const parsed = reviewSchema.safeParse({
     profileId: formData.get("profileId"),
     decision: formData.get("decision"),

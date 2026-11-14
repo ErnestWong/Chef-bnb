@@ -6,6 +6,8 @@ import { z } from "zod";
 import { getDb } from "@/lib/db";
 import { requireRole, requireUser } from "@/lib/auth/session";
 import { ReviewError, createReview, removeReview, restoreReview, reviewSchema } from "@/lib/reviews/reviews";
+import { LIMITS } from "@/lib/security/limits";
+import { rateLimitMessage } from "@/lib/security/rate-limit";
 import type { ActionResult } from "./bookings";
 
 /** Guest leaves the one review their attended booking allows. */
@@ -13,6 +15,8 @@ export async function submitReviewAction(_prev: ActionResult | null, formData: F
   const parsed = reviewSchema.safeParse({ bookingId: formData.get("bookingId"), rating: formData.get("rating"), body: formData.get("body") || undefined });
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Check the form." };
   const user = await requireUser(`/bookings/${parsed.data.bookingId}`);
+  const limited = await rateLimitMessage(getDb(), `review:user:${user.id}`, LIMITS.reviewsPerUser);
+  if (limited) return { ok: false, error: limited };
   let chefSlug: string | null = null;
   let eventId: string | null = null;
   try {
@@ -36,7 +40,9 @@ const moderateSchema = z.object({ reviewId: z.string().min(1), action: z.enum(["
 
 /** Admin takedown or restore. */
 export async function moderateReviewAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
-  await requireRole("ADMIN", "/admin/reviews");
+  const admin = await requireRole("ADMIN", "/admin/reviews");
+  const limited = await rateLimitMessage(getDb(), `admin:user:${admin.id}`, LIMITS.adminActionsPerUser);
+  if (limited) return { ok: false, error: limited };
   const parsed = moderateSchema.safeParse({ reviewId: formData.get("reviewId"), action: formData.get("action") });
   if (!parsed.success) return { ok: false, error: "Invalid request." };
   const db = getDb();

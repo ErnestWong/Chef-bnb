@@ -8,6 +8,8 @@ import { requireRole } from "@/lib/auth/session";
 import { getMailer } from "@/lib/email/mailer";
 import { notifyEventCancelled } from "@/lib/email/notify";
 import { CHEF_CANCEL_REASON, EventError, eventSchema, saveEvent, setEventStatus } from "@/lib/events/manage";
+import { LIMITS } from "@/lib/security/limits";
+import { rateLimitMessage } from "@/lib/security/rate-limit";
 import type { FormResult } from "./chefs";
 
 function fieldErrors(issues: z.core.$ZodIssue[]) {
@@ -35,6 +37,8 @@ export async function saveEventAction(_prev: FormResult | null, formData: FormDa
   if (raw.venueBorough === undefined) raw.venueBorough = "";
   const parsed = eventSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, fields: fieldErrors(parsed.error.issues) };
+  const limited = await rateLimitMessage(getDb(), `event:user:${user.id}`, LIMITS.eventSavesPerChef);
+  if (limited) return { ok: false, error: limited };
 
   let id: string;
   try {

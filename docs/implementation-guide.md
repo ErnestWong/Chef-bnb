@@ -176,6 +176,7 @@ In dependency order. Items 1–4 unblock the agent entirely for the first two mi
 - 🧑 Real content (item 10): seed chefs replaced with real profiles; fake data wiped from production
 - Optional: Sentry, Vercel Analytics
 - _Done when:_ a stranger can find a real event on the real domain, request seats, and the chef can confirm them.
+- _Status (2026-11-14), security slice (PR #13):_ rate limits backed by a `rate_limits` table (fixed windows, one atomic upsert, shared across instances): sign-in per IP and per email, booking actions, applications, reviews, event saves, admin moderation; the hourly jobs prune old counters. Abuse guards: one active booking per guest per dinner, at most 5 unpaid requests open per guest per day. Rejected chefs can apply again from `/chef` with their earlier answers prefilled; approved, pending and suspended profiles can't. Security headers on every route (CSP, HSTS, frame denial, nosniff, referrer and permissions policies; `X-Powered-By` off). Database: non-local connections must use TLS, pool capped at 5 per instance, 15 s statement timeout. `/api/health` pings the database and reports which integrations are configured. Still open in M9: brand pass 2, terms and privacy, Playwright, domain, real content.
 
 ## Testing and verification
 

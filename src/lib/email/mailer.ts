@@ -67,7 +67,7 @@ export function createMailer(transport: EmailTransport, from: string): Mailer {
 }
 
 /** Resend's shared test sender, usable before a domain is verified (delivers only to the Resend account's own address). */
-export const DEFAULT_FROM = "Chef-bnb <onboarding@resend.dev>";
+export const DEFAULT_FROM = "Covers <onboarding@resend.dev>";
 
 type Env = Record<string, string | undefined>;
 

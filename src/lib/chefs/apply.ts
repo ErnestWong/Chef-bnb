@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { Db } from "@/lib/db";
+import type { ChefStatus } from "@/generated/prisma/enums";
 import { BOROUGHS } from "@/lib/queries/event-filters";
 
 export const applySchema = z.object({
@@ -33,15 +34,58 @@ export function slugify(name: string): string {
 }
 
 export class ApplyError extends Error {
-  constructor(public readonly code: "already_applied") {
-    super("You already have an application on file.");
+  constructor(public readonly code: "already_applied" | "already_approved" | "suspended") {
+    super(
+      {
+        already_applied: "You already have an application in review.",
+        already_approved: "You're already approved to host; your dashboard is at /chef.",
+        suspended: "Your hosting is paused. Reply to the email you received to discuss it.",
+      }[code],
+    );
+    this.name = "ApplyError";
   }
 }
 
-/** Create a chef application (one per user). Status starts APPLIED; admin approves in /admin/chefs. */
+export function canApply(existing: { status: ChefStatus } | null): { ok: true; reapplying: boolean } | { ok: false; code: "already_applied" | "already_approved" | "suspended" } {
+  if (!existing) return { ok: true, reapplying: false };
+  if (existing.status === "REJECTED") return { ok: true, reapplying: true };
+  if (existing.status === "APPROVED") return { ok: false, code: "already_approved" };
+  if (existing.status === "SUSPENDED") return { ok: false, code: "suspended" };
+  return { ok: false, code: "already_applied" };
+}
+
+/**
+ * Create a chef application, or re-apply after a rejection: the rejected
+ * profile is updated in place and goes back to APPLIED, keeping the admin's
+ * earlier note so the reviewer has the history. Approved, suspended and
+ * pending profiles can't apply again.
+ */
 export async function createApplication(db: Db, userId: string, input: ApplyInput) {
-  const existing = await db.chefProfile.findUnique({ where: { userId }, select: { id: true } });
-  if (existing) throw new ApplyError("already_applied");
+  const existing = await db.chefProfile.findUnique({ where: { userId }, select: { id: true, status: true } });
+  const verdict = canApply(existing);
+  if (!verdict.ok) throw new ApplyError(verdict.code);
+
+  if (existing) {
+    return db.chefProfile.update({
+      where: { id: existing.id },
+      data: {
+        displayName: input.displayName,
+        bio: input.bio,
+        credentials: input.credentials || null,
+        website: input.website || null,
+        instagram: input.instagram ? input.instagram.replace(/^@/, "") : null,
+        homeBorough: input.homeBorough || null,
+        needsVenue: input.hosting === "VENUE",
+        needsFoh: input.needsFoh,
+        needsServers: input.needsServers,
+        paymentHandle: input.paymentHandle,
+        paymentNote: input.paymentNote || null,
+        foodCertNumber: input.foodCertNumber || null,
+        status: "APPLIED",
+        cuisines: { set: input.cuisineIds.map((id) => ({ id })) },
+      },
+    });
+  }
 
   const base = slugify(input.displayName);
   const taken = await db.chefProfile.findMany({ where: { slug: { startsWith: base } }, select: { slug: true } });

@@ -10,7 +10,7 @@ export type ChefApplicationDecidedProps = {
 export function chefApplicationDecidedEmail(p: ChefApplicationDecidedProps) {
   if (p.decision === "APPROVED") {
     return {
-      subject: "You're approved to host on Chef-bnb",
+      subject: "You're approved to host on Covers",
       react: (
         <EmailLayout preview="Your chef profile is live; post your first dinner" heading="Welcome aboard" cta={{ label: "Create your first dinner", href: appUrl("/chef/events/new") }}>
           <P>Hi {p.chefName}, your application has been approved. Your profile is live and you can publish dinners from your chef dashboard.</P>
@@ -21,7 +21,7 @@ export function chefApplicationDecidedEmail(p: ChefApplicationDecidedProps) {
     };
   }
   return {
-    subject: "About your Chef-bnb application",
+    subject: "About your Covers application",
     react: (
       <EmailLayout preview="We can't approve your chef application right now" heading="About your application" cta={{ label: "View your account", href: appUrl("/account") }}>
         <P>Hi {p.chefName}, thanks for applying to host. We aren&apos;t able to approve your application right now.</P>

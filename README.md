@@ -60,6 +60,10 @@ pnpm dev            # http://localhost:3000
 
 Sign in with any email (no password) at `/signin`. Seeded accounts: `casa.wong@example.test` (chef), `guest1@example.test` (guest with bookings), `admin@example.test` (admin, via `ADMIN_EMAILS` in `.env.local`). Re-run `pnpm db:seed` any time to reset the data.
 
+## Security
+
+Every mutating action is rate limited through a `rate_limits` table in Postgres (fixed windows, one atomic upsert, shared across serverless instances); rules live in `src/lib/security/limits.ts`. Sign-in is limited per IP and per email. Guests can hold one active booking per dinner and at most five unpaid requests at a time. Every route sends a Content Security Policy, HSTS (outside dev), `X-Frame-Options: DENY`, `nosniff`, and referrer and permissions policies (`src/lib/security/headers.ts`). Database connections off localhost must use TLS; the pool is capped and statements time out at 15 s. `GET /api/health` pings the database and reports which integrations are configured.
+
 ## Email and scheduled jobs
 
 Emails are React Email templates in `src/lib/email/templates/`, sent through Resend when `RESEND_API_KEY` is set and printed to the server log otherwise. Five idempotent jobs (expire unpaid requests, go/no-go at the cutoff, address reveal, close finished dinners, review requests) run from `GET /api/cron`, which requires `Authorization: Bearer $CRON_SECRET`; Vercel sends that header itself. The admin page has a "Run scheduled jobs now" button for testing. `vercel.json` schedules the route daily at 13:00 UTC because the Hobby plan allows one run a day; on Pro, switch to `0 * * * *`.

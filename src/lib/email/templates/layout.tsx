@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Body, Button, Container, Head, Heading, Hr, Html, Link, Preview, Section, Text } from "@react-email/components";
 
-export const BRAND = "Chef-bnb";
+export const BRAND = "Covers";
 
 /** Absolute URL for links in emails; NEXT_PUBLIC_APP_URL is the Vercel URL now, the real domain later. */
 export function appUrl(path: string, env: Record<string, string | undefined> = process.env): string {
