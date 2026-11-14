@@ -35,7 +35,7 @@ export function VenueMap({ neighborhood, borough, crossStreets, lat, lng }: Prop
       )}
       <figcaption className="px-4 py-3 text-sm">
         <span className="font-medium">{neighborhood}</span>, {BOROUGH_LABELS[borough]} · near {crossStreets}
-        <span className="block text-xs text-muted">Exact address is emailed to confirmed guests 48 hours before.</span>
+        <span className="block text-xs text-muted">Exact address is private and shared only with confirmed guests.</span>
       </figcaption>
     </figure>
   );

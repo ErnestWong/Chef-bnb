@@ -6,7 +6,6 @@ import { TransitionButton } from "@/components/booking-forms";
 import { BOOKING_TYPE_LABELS, BookingStatusBadge } from "@/components/booking-status";
 import { Container } from "@/components/ui";
 import { requireUser } from "@/lib/auth/session";
-import { RULES } from "@/lib/bookings/rules";
 import { BOROUGH_LABELS, formatEventDateTime, formatMoney, pluralize } from "@/lib/format";
 import { getBookingForGuest } from "@/lib/queries/bookings";
 
@@ -30,7 +29,6 @@ async function BookingDetails({ params, searchParams }: { params: PageProps<"/bo
   const isNew = sp.new === "1";
   const upcoming = b.event.startsAt > new Date();
   const cancellable = upcoming && (b.status === "REQUESTED" || b.status === "CONFIRMED");
-  const expiresAt = new Date(b.createdAt.getTime() + RULES.REQUEST_EXPIRY_HOURS * 3600 * 1000);
 
   return (
     <Container className="max-w-2xl py-12">
@@ -83,7 +81,7 @@ async function BookingDetails({ params, searchParams }: { params: PageProps<"/bo
             <p className="mt-2 text-sm text-muted">The chef hasn&apos;t added payment details yet; they&apos;ll reach out.</p>
           )}
           <p className="mt-3 text-xs text-muted">
-            Your seats are held until {formatEventDateTime(expiresAt)}. The chef marks the booking paid once the money arrives, and you&apos;ll see it confirmed here.
+            Your request holds seats until it is confirmed or cancelled. The chef marks the booking paid once the money arrives, and you&apos;ll see it confirmed here.
           </p>
         </section>
       )}
@@ -91,7 +89,7 @@ async function BookingDetails({ params, searchParams }: { params: PageProps<"/bo
       {b.status === "CONFIRMED" && upcoming && (
         <section className="mt-6 rounded-2xl border border-line p-6 text-sm">
           <h2 className="font-display text-2xl">You&apos;re in</h2>
-          <p className="mt-2">The exact address is emailed {RULES.ADDRESS_REVEAL_HOURS} hours before the dinner. It&apos;s BYOB — bring something to drink.</p>
+          <p className="mt-2">Your payment is confirmed. Automated address emails are not available yet; the chef needs to share the location privately before the dinner. It&apos;s BYOB — bring something to drink.</p>
         </section>
       )}
 

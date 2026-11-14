@@ -6,6 +6,7 @@ import { EventForm } from "@/components/event-form";
 import { Container } from "@/components/ui";
 import { requireRole } from "@/lib/auth/session";
 import { getDb } from "@/lib/db";
+import { listCuisines } from "@/lib/queries/events";
 import { APP_TIME_ZONE } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Edit dinner" };
@@ -32,12 +33,13 @@ async function EditForm({ params }: { params: PageProps<"/chef/events/[id]/edit"
   const db = getDb();
   const event = await db.event.findFirst({
     where: { id, chef: { userId: user.id } },
-    include: { _count: { select: { bookings: { where: { status: { in: ["REQUESTED", "CONFIRMED"] } } } } } },
+    include: { cuisines: { select: { id: true } }, _count: { select: { bookings: { where: { status: { in: ["REQUESTED", "CONFIRMED"] } } } } } },
   });
   if (!event) notFound();
-  const [venues, menus] = await Promise.all([
+  const [venues, menus, cuisines] = await Promise.all([
     db.venue.findMany({ where: { ownerUserId: user.id }, select: { id: true, neighborhood: true, borough: true, crossStreets: true }, orderBy: { createdAt: "asc" } }),
     db.menu.findMany({ where: { chef: { userId: user.id } }, select: { id: true, title: true }, orderBy: { createdAt: "desc" } }),
+    listCuisines(),
   ]);
   const { date, time } = localParts(event.startsAt);
 
@@ -49,6 +51,7 @@ async function EditForm({ params }: { params: PageProps<"/chef/events/[id]/edit"
         <EventForm
           venues={venues}
           menus={menus}
+          cuisines={cuisines}
           values={{
             id: event.id,
             title: event.title,
@@ -59,6 +62,7 @@ async function EditForm({ params }: { params: PageProps<"/chef/events/[id]/edit"
             priceDollars: event.priceCents / 100,
             minGuests: event.minGuests,
             maxGuests: event.maxGuests,
+            cuisineIds: event.cuisines.map((c) => c.id),
             allowedBookingTypes: event.allowedBookingTypes,
             dietaryNotes: event.dietaryNotes ?? "",
             byobNote: event.byobNote ?? "",

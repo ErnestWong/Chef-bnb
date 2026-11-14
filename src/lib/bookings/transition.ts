@@ -31,6 +31,12 @@ export type TransitionInput = {
  */
 export async function transitionBooking(db: Db, input: TransitionInput, now = new Date()): Promise<Booking> {
   return db.$transaction(async (tx) => {
+    // Resolve only the immutable parent ID before locking. All decisions must
+    // use state read after the lock, including competing booking transitions.
+    const parent = await tx.booking.findUnique({ where: { id: input.bookingId }, select: { eventId: true } });
+    if (!parent) throw new TransitionError("not_found", "Booking not found.");
+    await tx.$queryRaw`SELECT id FROM events WHERE id = ${parent.eventId} FOR UPDATE`;
+
     const booking = await tx.booking.findUnique({
       where: { id: input.bookingId },
       include: { event: { select: { id: true, startsAt: true, chef: { select: { userId: true } } } } },
@@ -49,9 +55,6 @@ export async function transitionBooking(db: Db, input: TransitionInput, now = ne
     if (input.to === "CANCELLED" && started && actor !== "admin") {
       throw new TransitionError("too_late", "This dinner has already started.");
     }
-
-    // Serialize with requestSeats, which locks the same row.
-    await tx.$queryRaw`SELECT id FROM events WHERE id = ${booking.event.id} FOR UPDATE`;
 
     const updated = await tx.booking.update({
       where: { id: booking.id },

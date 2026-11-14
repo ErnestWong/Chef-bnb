@@ -30,7 +30,7 @@ async function AccountDetails({ searchParams }: { searchParams: PageProps<"/acco
     <div className="mt-8 flex flex-col gap-6">
       {params.notice === "not-a-chef" && (
         <p role="status" className="rounded-md bg-accent/10 px-3 py-2 text-sm">
-          The chef dashboard is for approved chefs. Applications open in M3.
+          The chef dashboard is for approved chefs. Apply below to host a dinner.
         </p>
       )}
       <div className="flex items-center gap-4">
