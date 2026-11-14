@@ -1,5 +1,5 @@
 import type { Db } from "@/lib/db";
-import type { Mailer } from "@/lib/email/mailer";
+import type { Messenger } from "@/lib/messaging";
 import { notifyEventCancelled } from "@/lib/email/notify";
 import { cancelEventTx, type CancelledBooking } from "@/lib/events/manage";
 import { emptyResult, errorMessage } from "./shared";
@@ -14,7 +14,7 @@ export const UNDER_MINIMUM_REASON = "Fewer than the minimum confirmed by the cut
  * event row lock so a payment being marked at the same moment is counted or
  * cleanly cancelled, never lost.
  */
-export async function goNoGo(db: Db, mailer: Mailer, now = new Date()): Promise<JobResult> {
+export async function goNoGo(db: Db, messenger: Messenger, now = new Date()): Promise<JobResult> {
   const result = emptyResult();
   const due = await db.event.findMany({
     where: { status: "PUBLISHED", goNoGoCheckedAt: null, goNoGoAt: { lte: now }, startsAt: { gt: now } },
@@ -38,7 +38,7 @@ export async function goNoGo(db: Db, mailer: Mailer, now = new Date()): Promise<
       if (!outcome) continue;
       result.processed++;
       if (outcome.cancelled) {
-        result.emails += await notifyEventCancelled(db, mailer, id, outcome.cancelled, { reason: UNDER_MINIMUM_REASON, cancelledBy: "system" });
+        result.emails += await notifyEventCancelled(db, messenger, id, outcome.cancelled, { reason: UNDER_MINIMUM_REASON, cancelledBy: "system" });
       }
     } catch (err) {
       result.errors.push(`${id}: ${errorMessage(err)}`);

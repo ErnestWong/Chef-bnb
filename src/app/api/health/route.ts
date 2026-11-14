@@ -1,6 +1,7 @@
 import { getBuildInfo } from "@/lib/build-info";
 import { isDevLoginEnabled } from "@/lib/auth/dev-login";
 import { getDb } from "@/lib/db";
+import { isPhoneSignInEnabled, twilioConfigFromEnv } from "@/lib/sms/verify";
 
 /**
  * Liveness plus a configuration readout (booleans only, never values), so a
@@ -21,6 +22,8 @@ export async function GET() {
       time: new Date().toISOString(),
       database,
       email: env.RESEND_API_KEY ? "resend" : "console",
+      sms: env.TWILIO_MESSAGING_SERVICE_SID && env.TWILIO_ACCOUNT_SID ? "twilio" : "console",
+      phoneSignIn: twilioConfigFromEnv(env) ? "twilio" : isPhoneSignInEnabled(env) ? "console" : "off",
       cron: Boolean(env.CRON_SECRET),
       maps: Boolean(env.NEXT_PUBLIC_MAPBOX_TOKEN),
       devLogin: isDevLoginEnabled(),

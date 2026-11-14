@@ -58,7 +58,10 @@ Set in Vercel (production + preview) and in `.env.local` for dev. `.env.example`
 |---|---|---|---|
 | `DATABASE_URL` | Neon connection string (pooled), plus `DIRECT_URL` (unpooled) for Prisma migrations | 🧑 Ernest, from Neon dashboard | M1 |
 | `AUTH_SECRET` | Session encryption key | Agent generates (`openssl rand -base64 32`) | M2 |
-| `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | Google OAuth client | 🧑 Ernest, from Google Cloud console | M2 |
+| `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` / `TWILIO_VERIFY_SERVICE_SID` | Phone sign-in codes | 🧑 Ernest, from the Twilio console (item 4) | M2 |
+| `TWILIO_MESSAGING_SERVICE_SID` | Notification texts | 🧑 Ernest, after A2P registration (item 4) | M7 |
+| `ADMIN_PHONES` | Admin role for phone sign-ins | 🧑 Ernest | M2 |
+| `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | Google OAuth client (optional, 4b) | 🧑 Ernest, from Google Cloud console | later |
 | `ADMIN_EMAILS` | Comma-separated emails that get the admin role on sign-in | 🧑 Ernest (his Gmail) | M2 |
 | `NEXT_PUBLIC_APP_URL` | Canonical URL for links in emails | Agent (Vercel URL now, domain later) | M2 |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob | Auto-set when Ernest enables Blob | M3 |
@@ -75,7 +78,8 @@ In dependency order. Items 1–4 unblock the agent entirely for the first two mi
 - [x] **1. GitHub repo** — create a private repo, grant the agent access. (M0) _Repo exists at ErnestWong/Chef-bnb; currently public — flip to private._
 - [ ] **2. Vercel** — create account, import the repo. Previews deploy from then on. (M0)
 - [ ] **3. Neon** — create a project, paste `DATABASE_URL` and `DIRECT_URL` into Vercel env + `.env.local`. (M1)
-- [ ] **4. Google OAuth** — in Google Cloud console: new project → OAuth consent screen (External, app name, your email) → Credentials → OAuth client ID (Web). Authorized redirect URIs: `http://localhost:3000/api/auth/callback/google` and `https://<app>.vercel.app/api/auth/callback/google` (add the real domain later). Copy ID + secret into env. Set `ADMIN_EMAILS` to your Gmail. (M2)
+- [ ] **4. Phone sign-in (Twilio)** — decided 2026-11-14, replaces Google as the primary sign-in. Twilio account → Account SID + Auth Token; Verify → Services → create "Covers" → Service SID. Set `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_VERIFY_SERVICE_SID` in Vercel (Production + Preview) and `ADMIN_PHONES` to your mobile. For notification texts: Messaging → Services → create one with a US number, complete A2P 10DLC brand + campaign registration (business details, sample messages; days to weeks), then set `TWILIO_MESSAGING_SERVICE_SID`. Until then phone-only guests' notifications print to the server log and everyone with an email gets email. (M2)
+- [ ] **4b. Google OAuth (optional, later)** — in Google Cloud console: new project → OAuth consent screen (External, app name, your email) → Credentials → OAuth client ID (Web). Authorized redirect URIs: `http://localhost:3000/api/auth/callback/google` and `https://<app>.vercel.app/api/auth/callback/google` (add the real domain later). Copy ID + secret into env. Set `ADMIN_EMAILS` to your Gmail. (M2)
 - [ ] **5. Enable Vercel Blob** in the dashboard. (M3)
 - [ ] **6. Mapbox** — account + public token. (M5)
 - [ ] **7. Resend** — account, API key. Domain verification (DNS records) needs the domain from item 9; until then emails send from Resend's test address, dev-only. (M7)
@@ -83,7 +87,7 @@ In dependency order. Items 1–4 unblock the agent entirely for the first two mi
 - [ ] **9. Domain** — pick the name, buy it, point DNS at Vercel, add it to Google OAuth redirect URIs and Resend. (M9)
 - [ ] **10. Content** — 3–5 real chef profiles (bios, photos, sample menus) and your own admin pass over them. Casa Wong can be the first. (M9)
 - [ ] **11. Lawyer consult** — runs in parallel with the build; blocks public launch posture, not code. (before launch)
-- [ ] **12. Terms + privacy policy** — draft pages ship in M9; have the lawyer read them. (before launch)
+- [ ] **12. Terms + privacy policy** — drafts live at `/terms` and `/privacy` (2026-11-14); have the lawyer read them. (before launch)
 
 ## Milestones 0–3: foundation
 
@@ -109,7 +113,8 @@ In dependency order. Items 1–4 unblock the agent entirely for the first two mi
 - Roles: guest (default), chef (after approval), admin; route protection (`/admin/*` admin-only, chef dashboard chef-only)
 - Account page stub: name, avatar from Google, dinners attended (0 for now)
 - _Done when:_ Ernest signs in with Google on the preview and sees `/admin`. 🧑 Item 4.
-- _Status (2026-11-13):_ built with a placeholder email-only sign-in in place of Google, by Ernest's call to skip OAuth for now. Google becomes a provider swap in `src/auth.ts` once item 4 is done; roles, route protection and the account page are in place.
+- _Status (2026-11-13):_ built with a placeholder email-only sign-in in place of Google, by Ernest's call to skip OAuth for now. Roles, route protection and the account page are in place.
+- _Status (2026-11-14), phone sign-in:_ Ernest chose phone-number sign-in (Partiful-style) as the primary identity, best for solo diners booking from a phone. Flow: number → six-digit code by text (Twilio Verify; console code `000000` outside production) → first time only, "what should the chef call you?" → back to where they were. `users.email` is now optional and `users.phone` unique; a guest who applies to host adds an email on the application. Notifications go SMS-first for anyone with a verified phone (short texts in `src/lib/sms/texts.ts`, built from the same props as the emails) and by email otherwise. Rate limits: 5 codes per number per hour, 8 checks per 15 minutes. The dev email sign-in stays for seeded chef and admin accounts outside production. Google remains possible later as a second button (4b).
 
 ### M3 — Chef intake and admin
 
@@ -177,6 +182,7 @@ In dependency order. Items 1–4 unblock the agent entirely for the first two mi
 - Optional: Sentry, Vercel Analytics
 - _Done when:_ a stranger can find a real event on the real domain, request seats, and the chef can confirm them.
 - _Status (2026-11-14), security slice (PR #13):_ rate limits backed by a `rate_limits` table (fixed windows, one atomic upsert, shared across instances): sign-in per IP and per email, booking actions, applications, reviews, event saves, admin moderation; the hourly jobs prune old counters. Abuse guards: one active booking per guest per dinner, at most 5 unpaid requests open per guest per day. Rejected chefs can apply again from `/chef` with their earlier answers prefilled; approved, pending and suspended profiles can't. Security headers on every route (CSP, HSTS, frame denial, nosniff, referrer and permissions policies; `X-Powered-By` off). Database: non-local connections must use TLS, pool capped at 5 per instance, 15 s statement timeout. `/api/health` pings the database and reports which integrations are configured. Still open in M9: brand pass 2, terms and privacy, Playwright, domain, real content.
+- _Status (2026-11-14), legal slice:_ `/terms` and `/privacy` ship as plain-language drafts, linked from the footer, the sign-in form, the seat-request form (with a one-line "House rules" summary) and the last step of the chef application (terms for hosts). The house rules on the terms page are built from `RULES` (`src/lib/policies.ts`) so the numbers can't drift from what the code enforces; a unit test checks it. Dinner pages already show BYOB and the table size in "Good to know". The contact address comes from `NEXT_PUBLIC_SUPPORT_EMAIL` (unset until item 9); until then the pages say "reply to any email we send you". Open for the lawyer (item 12): refund rule for guest cancellations (currently the chef's call), the liability cap, and account deletion wording. Still open in M9: brand pass 2, Playwright, domain, real content.
 
 ## Testing and verification
 

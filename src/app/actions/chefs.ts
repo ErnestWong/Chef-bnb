@@ -5,8 +5,8 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getDb } from "@/lib/db";
 import { requireRole, requireUser } from "@/lib/auth/session";
-import { ApplyError, applySchema, createApplication, reviewApplication } from "@/lib/chefs/apply";
-import { getMailer } from "@/lib/email/mailer";
+import { ApplyError, EmailTakenError, applySchema, claimEmail, createApplication, reviewApplication } from "@/lib/chefs/apply";
+import { getMessenger } from "@/lib/messaging";
 import { notifyChefDecision } from "@/lib/email/notify";
 import { LIMITS } from "@/lib/security/limits";
 import { rateLimitMessage } from "@/lib/security/rate-limit";
@@ -29,6 +29,7 @@ function fieldErrors(issues: z.core.$ZodIssue[]): FieldErrors {
 export async function applyAsChefAction(_prev: FormResult | null, formData: FormData): Promise<FormResult> {
   const user = await requireUser("/chef/apply");
   const parsed = applySchema.safeParse({
+    email: formData.get("email") || "",
     displayName: formData.get("displayName"),
     bio: formData.get("bio"),
     credentials: formData.get("credentials") || undefined,
@@ -44,13 +45,17 @@ export async function applyAsChefAction(_prev: FormResult | null, formData: Form
     foodCertNumber: formData.get("foodCertNumber") || undefined,
   });
   if (!parsed.success) return { ok: false, fields: fieldErrors(parsed.error.issues) };
+  if (!user.email && !parsed.data.email) return { ok: false, fields: { email: "Chefs need an email address." } };
   const limited = await rateLimitMessage(getDb(), `apply:user:${user.id}`, LIMITS.applyPerUser);
   if (limited) return { ok: false, error: limited };
 
   try {
+    // A phone-only guest becomes reachable by email here; the session picks it up on its next refresh.
+    if (!user.email && parsed.data.email) await claimEmail(getDb(), user.id, parsed.data.email);
     await createApplication(getDb(), user.id, parsed.data);
   } catch (err) {
     if (err instanceof ApplyError) return { ok: false, error: err.message };
+    if (err instanceof EmailTakenError) return { ok: false, fields: { email: err.message } };
     throw err;
   }
   revalidatePath("/account");
@@ -76,7 +81,7 @@ export async function reviewChefAction(_prev: ActionResult | null, formData: For
   });
   if (!parsed.success) return { ok: false, error: "Invalid request." };
   await reviewApplication(getDb(), parsed.data);
-  if (parsed.data.decision !== "SUSPENDED") await notifyChefDecision(getDb(), getMailer(), parsed.data.profileId);
+  if (parsed.data.decision !== "SUSPENDED") await notifyChefDecision(getDb(), getMessenger(), parsed.data.profileId);
   revalidatePath("/admin/chefs");
   revalidatePath(`/admin/chefs/${parsed.data.profileId}`);
   revalidatePath("/chefs");

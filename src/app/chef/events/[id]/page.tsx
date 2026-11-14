@@ -8,6 +8,7 @@ import { EventStatusButton } from "@/components/event-form";
 import { BOOKING_TYPE_LABELS, BookingStatusBadge } from "@/components/booking-status";
 import { Badge, Container } from "@/components/ui";
 import { requireChef } from "@/lib/auth/session";
+import { contactLine, displayName } from "@/lib/contact";
 import { formatEventDateTime, formatMoney, pluralize } from "@/lib/format";
 import { confirmedSeats, getEventForChef, heldSeats } from "@/lib/queries/bookings";
 import { appUrl } from "@/lib/app-url";
@@ -104,7 +105,7 @@ async function GuestList({ params, searchParams }: { params: PageProps<"/chef/ev
           <ul className="mt-2 flex flex-col gap-1 text-sm">
             {dietary.map((b) => (
               <li key={b.id}>
-                <span className="font-medium">{b.guest.name ?? b.guest.email}</span> ({pluralize(b.partySize, "guest")}): {b.dietaryNotes}
+                <span className="font-medium">{displayName(b.guest)}</span> ({pluralize(b.partySize, "guest")}): {b.dietaryNotes}
               </li>
             ))}
           </ul>
@@ -124,7 +125,7 @@ async function GuestList({ params, searchParams }: { params: PageProps<"/chef/ev
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="font-medium">{b.guest.name ?? "—"}</p>
-                      <p className="truncate text-xs text-muted">{b.guest.email}</p>
+                      <p className="truncate text-xs text-muted">{contactLine(b.guest)}</p>
                     </div>
                     <BookingStatusBadge status={b.status} />
                   </div>
@@ -150,7 +151,7 @@ async function GuestList({ params, searchParams }: { params: PageProps<"/chef/ev
                     <tr key={b.id} className="border-t border-line">
                       <td className="px-4 py-3">
                         <p className="font-medium">{b.guest.name ?? "—"}</p>
-                        <p className="text-xs text-muted">{b.guest.email}</p>
+                        <p className="text-xs text-muted">{contactLine(b.guest)}</p>
                       </td>
                       <td className="px-4 py-3">{BOOKING_TYPE_LABELS[b.type]}, {pluralize(b.partySize, "guest")}</td>
                       <td className="px-4 py-3">{formatMoney(b.amountCents)}</td>

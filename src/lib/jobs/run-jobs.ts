@@ -1,5 +1,5 @@
 import type { Db } from "@/lib/db";
-import type { Mailer } from "@/lib/email/mailer";
+import type { Messenger } from "@/lib/messaging";
 import { closeEvents } from "./close-events";
 import { expireRequests } from "./expire-requests";
 import { goNoGo } from "./go-no-go";
@@ -9,7 +9,7 @@ import { revealAddresses } from "./reveal-addresses";
 import { errorMessage } from "./shared";
 import { JOB_NAMES, type JobName, type JobReport, type JobResult } from "./types";
 
-type Job = (db: Db, mailer: Mailer, now: Date) => Promise<JobResult>;
+type Job = (db: Db, messenger: Messenger, now: Date) => Promise<JobResult>;
 
 const JOBS: Record<JobName, Job> = { expireRequests, goNoGo, revealAddresses, closeEvents, requestReviews, pruneRateLimits };
 
@@ -20,11 +20,11 @@ const JOBS: Record<JobName, Job> = { expireRequests, goNoGo, revealAddresses, cl
  * changes nothing the second time. Called hourly by /api/cron and on demand
  * from the admin page.
  */
-export async function runJobs(db: Db, mailer: Mailer, now = new Date()): Promise<JobReport> {
+export async function runJobs(db: Db, messenger: Messenger, now = new Date()): Promise<JobReport> {
   const jobs = {} as Record<JobName, JobResult>;
   for (const name of JOB_NAMES) {
     try {
-      jobs[name] = await JOBS[name](db, mailer, now);
+      jobs[name] = await JOBS[name](db, messenger, now);
     } catch (err) {
       jobs[name] = { processed: 0, emails: 0, errors: [errorMessage(err)] };
     }

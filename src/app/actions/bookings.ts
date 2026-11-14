@@ -8,7 +8,7 @@ import { requireUser } from "@/lib/auth/session";
 import { BookingError, requestSeats } from "@/lib/bookings/request-seats";
 import { RULES } from "@/lib/bookings/rules";
 import { transitionBooking, TransitionError } from "@/lib/bookings/transition";
-import { getMailer } from "@/lib/email/mailer";
+import { getMessenger } from "@/lib/messaging";
 import { notifyBookingCancelledByOther, notifyBookingConfirmed, notifyRequestReceived, notifySeatRequested } from "@/lib/email/notify";
 import { revealAddressForBooking } from "@/lib/jobs/reveal-addresses";
 import { LIMITS } from "@/lib/security/limits";
@@ -50,8 +50,8 @@ export async function requestSeatsAction(_prev: ActionResult | null, formData: F
     if (err instanceof BookingError) return { ok: false, error: err.message };
     throw err;
   }
-  await notifySeatRequested(getDb(), getMailer(), bookingId);
-  await notifyRequestReceived(getDb(), getMailer(), bookingId);
+  await notifySeatRequested(getDb(), getMessenger(), bookingId);
+  await notifyRequestReceived(getDb(), getMessenger(), bookingId);
   revalidatePath(`/events/${parsed.data.eventId}`);
   redirect(`/bookings/${bookingId}?new=1`);
 }
@@ -93,17 +93,17 @@ export async function transitionBookingAction(_prev: ActionResult | null, formDa
     throw err;
   }
   const db = getDb();
-  const mailer = getMailer();
+  const messenger = getMessenger();
   if (parsed.data.to === "CONFIRMED") {
     // Tell the guest; if the dinner is already inside the reveal window, send the address too.
-    await notifyBookingConfirmed(db, mailer, parsed.data.bookingId);
-    await revealAddressForBooking(db, mailer, parsed.data.bookingId);
+    await notifyBookingConfirmed(db, messenger, parsed.data.bookingId);
+    await revealAddressForBooking(db, messenger, parsed.data.bookingId);
   }
   if (parsed.data.to === "CANCELLED" && before) {
     const byChef = user.id === before.event.chef.userId && user.id !== before.guestUserId;
     const byGuest = user.id === before.guestUserId;
-    if (before.status === "REQUESTED" && byChef) await notifyBookingCancelledByOther(db, mailer, parsed.data.bookingId, "guest");
-    if (before.status === "CONFIRMED" && byGuest) await notifyBookingCancelledByOther(db, mailer, parsed.data.bookingId, "chef");
+    if (before.status === "REQUESTED" && byChef) await notifyBookingCancelledByOther(db, messenger, parsed.data.bookingId, "guest");
+    if (before.status === "CONFIRMED" && byGuest) await notifyBookingCancelledByOther(db, messenger, parsed.data.bookingId, "chef");
   }
   const returnTo = parsed.data.returnTo;
   if (returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//")) {

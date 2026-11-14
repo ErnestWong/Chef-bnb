@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { ReviewChefForm } from "@/components/review-chef-form";
 import { Badge, Container } from "@/components/ui";
 import { requireRole } from "@/lib/auth/session";
+import { formatPhone } from "@/lib/auth/phone";
 import { getDb } from "@/lib/db";
 import { BOROUGH_LABELS, formatEventDateTime } from "@/lib/format";
 
@@ -26,12 +27,13 @@ async function Application({ params }: { params: PageProps<"/admin/chefs/[id]">[
   // Admin view: private columns are intentionally included here.
   const p = await getDb().chefProfile.findUnique({
     where: { id },
-    include: { user: { select: { email: true, name: true, createdAt: true } }, cuisines: true, _count: { select: { events: true } } },
+    include: { user: { select: { email: true, phone: true, name: true, createdAt: true } }, cuisines: true, _count: { select: { events: true } } },
   });
   if (!p) notFound();
 
   const rows: [string, string | null | undefined][] = [
     ["Email", p.user.email],
+    ["Phone", p.user.phone ? formatPhone(p.user.phone) : null],
     ["Bio", p.bio],
     ["Credentials", p.credentials],
     ["Website", p.website],

@@ -25,7 +25,7 @@ The brand's job is trust at a glance: a stranger lands on an event page from an 
 **Audience.** NYC, 25–38, already spends $60–150 on a night out, lives in or near Williamsburg / Greenpoint, LES / East Village, or Hell's Kitchen. Three jobs, in priority order:
 
 1. **Solo, meet people.** Timeleft's customer: new to the city or newly single, wants a social night with low commitment and no small-talk apps.
-2. **Small group night out.** 2–5 friends who are bored of restaurants and want a story to tell on Monday.
+2. **Friends’ night out, 2–4.** A guys’ night or a girls’ night that has outgrown the same three bars: hang out together, meet a few new people at the table. A launch voice alongside solo, because four seats in one booking is half a table.
 3. **Hosting an occasion.** Birthdays, team dinners, dates: buys out the table. Important revenue, but not the launch voice.
 
 Chefs are the second audience: line cooks, sous chefs, culinary grads and existing supper-club hosts who want their own stage without DM chaos. They get a one-page pitch and personal outreach, not the public campaign.
@@ -82,7 +82,7 @@ The open space is the middle-left: the energy of the Instagram supper clubs with
 | Persona | Trigger | Worry | What the brand and product answer |
 | --- | --- | --- | --- |
 | **Maya, 29**, designer in Greenpoint, moved from Chicago eight months ago, did Timeleft twice, follows three supper clubs on Instagram | "I want to meet people who aren't from work" | "Is it weird to go alone?" | A solo-friendly badge, "3 of 8 seats are solo bookers" on the event page, the chef's face and voice up front |
-| **Dev + 3 friends, 32**, run-club group in Williamsburg | Group chat: "what are we doing Saturday?" | "What if it's bad? Who pays?" | Menu and price up front, reviews from verified guests, a group booking with one payer |
+| **Jess + 3 friends, 28**, girls’ night in Williamsburg (Dev’s run-club crew books the same way) | Group chat: "what are we doing Saturday?" | "Do we sit together? Who pays?" | Book 2–4 seats as one, sit together, split or one payer; menu and price up front; the other seats are people like you |
 | **Priya, 35**, manages a team of eight | Offsite dinner, birthday | Dietary needs, address privacy, expensing | Buyout flow, dietary notes per guest, a receipt. Not the launch voice |
 
 ### 4. Relationship to Casa Wong
@@ -126,13 +126,13 @@ Decision (Nov 14): Covers is the working name. Family Meal was the first pick un
 
 ## Visual identity
 
-Keep the system the app already has (Fraunces display, Geist UI, one terracotta accent, light and dark) and finish it: a wordmark, a neutral palette with names, photo rules, a small illustration set, and card-first layout. The platform looks like good paper; the chefs bring the color.
+Keep the system the app already has (Instrument Serif display, chosen Nov 14 over Fraunces because its hooked f read as crooked at wordmark size; Geist UI, one terracotta accent, light and dark) and finish it: a wordmark, a neutral palette with names, photo rules, a small illustration set, and card-first layout. The platform looks like good paper; the chefs bring the color.
 
 | Element | Direction | Casa Wong contrast |
 | --- | --- | --- |
-| **Wordmark** | Lowercase serif wordmark in Fraunces (or a licensed cut later), no symbol at launch. One drawn gesture may attach to it (a chair, a bell) once the name is chosen. Commission this from a designer; it is the one piece worth paying for | Casa Wong is a hand script; the platform is typeset. Never a script |
+| **Wordmark** | Lowercase serif wordmark in Instrument Serif (or a licensed cut later), no symbol at launch. One drawn gesture may attach to it (a chair, a bell) once the name is chosen. Commission this from a designer; it is the one piece worth paying for | Casa Wong is a hand script; the platform is typeset. Never a script |
 | **Palette** | Five tokens: paper `#f5f1e9`, ink `#1c1917`, muted `#6b655c`, accent terracotta `#c2410c` (already in the app; `#fb923c` in dark mode), night `#17150f` for dark surfaces. One accent only; chef pages may add the chef's own color in their header | Casa Wong's chili `#81271f` and paste `#a84334` stay theirs. Terracotta is warm and adjacent without being red |
-| **Type** | Fraunces for headlines (use its optical size and "soft" axis for the playful streak), Geist for UI and body, Geist Mono for metadata: dates, neighborhoods, "3 of 8 seats", prices. Mono metadata is the one visible borrow | Casa Wong uses Canela and Menlo. The Canela file in the resources folder is a trial license; don't ship it |
+| **Type** | Instrument Serif for headlines (its italic, one word in a headline at most, for the playful streak), Geist for UI and body, Geist Mono for metadata: dates, neighborhoods, "3 of 8 seats", prices. Mono metadata is the one visible borrow | Casa Wong uses Canela and Menlo. The Canela file in the resources folder is a trial license; don't ship it |
 | **Photography** | Real tables, real people, mid-moment. Flash or candlelight, never studio. Hero image = the table and the people; the plate is the second image, shot with care. Vertical 4:5 for Instagram, 3:2 for event cards. No stock, no flat lays with props, no overhead "content" shots | Same documentary style as the brand guide shoot. Reuse Casa Wong's library for launch, credited |
 | **Illustration** | 8–12 single-line ink drawings: chair, bottle, candle, doorbell, keys, stacked plates, a table for ten, a "10". Used in empty states, email headers, stickers. Drawn in ink, never in the accent color | Casa Wong's red noodles and candles stay theirs; same medium, different subjects and color |
 | **Texture** | A faint paper grain (3–4% opacity) on hero and email backgrounds only, never on UI surfaces | The "little bit" of Casa Wong |
@@ -201,7 +201,7 @@ Produce a 14-page guide in Figma over two weekends, export it as a PDF like the 
 | 5 Mood | Six to eight photos: Casa Wong library plus two or three references | Casa Wong shoot, credited |
 | 6 Wordmark | On paper, on night, on a photo; clear space; minimum size; four misuses | Designer |
 | 7 Palette | Five named tokens, light and dark, with hex and the CSS variable names from `globals.css` | Visual identity |
-| 8 Type | Fraunces, Geist, Geist Mono; the type scale; one event card as the specimen | Already in the app |
+| 8 Type | Instrument Serif, Geist, Geist Mono; the type scale; one event card as the specimen | Geist already in the app; Instrument Serif replaces Fraunces in `src/app/layout.tsx` |
 | 9 Photography | The rules, with six yes/no example pairs | Visual identity |
 | 10 Illustration | The 8–12 line drawings and where each is used | Designer, or hand-drawn and scanned |
 | 11 Voice | Five rules, banned words, the headline bank, two sample emails | Voice and copy |
@@ -209,7 +209,7 @@ Produce a 14-page guide in Figma over two weekends, export it as a PDF like the 
 | 13 Chef kit | How a chef's own identity sits inside the platform, with Casa Wong as the worked example | Figma |
 | 14 Print | A table card / menu card template chefs can print, a sticker sheet | Figma |
 
-**Tooling and licenses.** Figma free tier for the guide and templates. Fraunces, Geist and Geist Mono are open-source (OFL), free for commercial use, already loaded in the app. Canela in the resources folder is a trial license and stays out. Email templates already exist as React Email in the repo; apply the tokens there rather than designing emails twice.
+**Tooling and licenses.** Figma free tier for the guide and templates. Instrument Serif, Geist and Geist Mono are open-source (OFL), free for commercial use; Geist is loaded in the app and Instrument Serif replaces Fraunces there. Canela in the resources folder is a trial license and stays out. Email templates already exist as React Email in the repo; apply the tokens there rather than designing emails twice.
 
 **Sequence.**
 
@@ -255,11 +255,12 @@ Organic and chef-led channels fill the first dinners; the $1,000 ad credit is sp
 
 **Paid, in detail.** Assumes the credit is Meta; if it's Google, run search on "supper club NYC" and "dinner party NYC" instead and skip display. Install the Meta pixel with a `request_seats` event before the first dollar. Pacing: nothing in November; $300 in December across three weeks to test creatives; $700 in January at about $175 a week behind the weekly drop. Rough NYC numbers for a lifestyle audience: $12–20 CPM and about 1% click-through, so the credit buys roughly 60–80k impressions and 600–800 visits; at a 3–5% request rate that is 20–35 seat requests. These are estimates to beat, not benchmarks.
 
-**Three campaign concepts.** Shoot all three at the first dinners; keep the one with the best click-through.
+**Four campaign concepts.** Shoot all four at the first dinners; keep the one with the best click-through.
 
 1. **Dinner's at a stranger's place.** An apartment door, a buzzer, a mono slip reading "address arrives 48 h before". Speaks to the solo job. Story and 4:5 post.
 2. **Ten seats.** A table with chairs filling in frame by frame, "3 left" in mono. Urgency for the group job. Works as a 6-second video.
 3. **[Chef] is cooking Thursday.** A chef portrait at their stove, the menu in three lines, eight seats. Chef-led and repeatable for every dinner; also the format chefs post themselves.
+4. **Bring your people.** Four friends at one end of the table, four strangers at the other, one chef in the doorway. "Bring your people. We’ll fill the other seats." Speaks to the friends job; the natural one to send to a group chat. 4:5 post and a 6-second cut.
 
 **Weekly content rhythm.**
 

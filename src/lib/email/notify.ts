@@ -2,16 +2,37 @@ import "server-only";
 import type { Db } from "@/lib/db";
 import type { CancelledBooking } from "@/lib/events/manage";
 import { requestExpiresAt } from "@/lib/bookings/rules";
-import type { Mailer } from "./mailer";
+import type { Messenger } from "@/lib/messaging";
+import * as S from "@/lib/sms/texts";
+import type { EmailInput } from "./mailer";
 import * as T from "./templates";
 
 /**
- * Load what each email needs and send it. These run after the transaction
- * that changed state has committed, and never throw: a mail failure is logged,
- * not surfaced to the user, because the booking change already happened.
+ * Load what each notification needs and send it. These run after the
+ * transaction that changed state has committed, and never throw: a delivery
+ * failure is logged, not surfaced to the user, because the booking change
+ * already happened.
+ *
+ * Channel: a text when the person has a verified phone, else an email. Phone
+ * is the sign-in for most guests, so it is the channel they actually read.
  */
 
-const nameOf = (u: { name: string | null; email: string }) => u.name?.trim() || u.email.split("@")[0];
+export type Recipient = { name: string | null; email: string | null; phone: string | null };
+
+const nameOf = (u: Recipient) => u.name?.trim() || u.email?.split("@")[0] || "there";
+
+type Message = { email: Omit<EmailInput, "to">; sms: string };
+
+/** Send one message by the recipient's channel. False when they have no contact at all (logged). */
+export async function deliver(m: Messenger, to: Recipient, message: Message, prefer: "sms" | "email" = "sms"): Promise<boolean> {
+  const channels = prefer === "sms" ? (["sms", "email"] as const) : (["email", "sms"] as const);
+  for (const channel of channels) {
+    if (channel === "sms" && to.phone) return m.sms.send({ to: to.phone, body: message.sms });
+    if (channel === "email" && to.email) return m.email.send({ to: to.email, ...message.email });
+  }
+  console.error(`[notify] no channel for recipient ${JSON.stringify({ name: to.name })}`);
+  return false;
+}
 
 async function attempt(label: string, fn: () => Promise<boolean>): Promise<boolean> {
   try {
@@ -22,120 +43,112 @@ async function attempt(label: string, fn: () => Promise<boolean>): Promise<boole
   }
 }
 
+const CONTACT = { name: true, email: true, phone: true } as const;
+
 /** To the chef: a guest requested seats. */
-export function notifySeatRequested(db: Db, mailer: Mailer, bookingId: string) {
+export function notifySeatRequested(db: Db, m: Messenger, bookingId: string) {
   return attempt(`seat requested ${bookingId}`, async () => {
     const b = await db.booking.findUnique({
       where: { id: bookingId },
       select: {
         type: true, partySize: true, amountCents: true, dietaryNotes: true,
-        guest: { select: { name: true, email: true } },
-        event: { select: { id: true, title: true, startsAt: true, chef: { select: { displayName: true, user: { select: { email: true } } } } } },
+        guest: { select: CONTACT },
+        event: { select: { id: true, title: true, startsAt: true, chef: { select: { displayName: true, user: { select: CONTACT } } } } },
       },
     });
     if (!b) return false;
-    return mailer.send({
-      to: b.event.chef.user.email,
-      ...T.seatRequestedEmail({
-        chefName: b.event.chef.displayName, guestName: nameOf(b.guest), bookingType: b.type, partySize: b.partySize, amountCents: b.amountCents,
-        dietaryNotes: b.dietaryNotes, eventId: b.event.id, eventTitle: b.event.title, startsAt: b.event.startsAt,
-      }),
-    });
+    const p = {
+      chefName: b.event.chef.displayName, guestName: nameOf(b.guest), bookingType: b.type, partySize: b.partySize, amountCents: b.amountCents,
+      dietaryNotes: b.dietaryNotes, eventId: b.event.id, eventTitle: b.event.title, startsAt: b.event.startsAt,
+    };
+    return deliver(m, b.event.chef.user, { email: T.seatRequestedEmail(p), sms: S.seatRequestedText(p) });
   });
 }
 
 /** To the guest right after they request: amount, the chef's handle, and the deadline. */
-export function notifyRequestReceived(db: Db, mailer: Mailer, bookingId: string) {
+export function notifyRequestReceived(db: Db, m: Messenger, bookingId: string) {
   return attempt(`request received ${bookingId}`, async () => {
     const b = await db.booking.findUnique({
       where: { id: bookingId },
       select: {
         id: true, type: true, partySize: true, amountCents: true, createdAt: true,
-        guest: { select: { name: true, email: true } },
+        guest: { select: CONTACT },
         // PRIVATE: the payment handle goes only to the guest who holds this request.
         event: { select: { title: true, startsAt: true, chef: { select: { displayName: true, paymentHandle: true, paymentNote: true } } } },
       },
     });
     if (!b) return false;
-    return mailer.send({
-      to: b.guest.email,
-      ...T.requestReceivedEmail({
-        guestName: nameOf(b.guest), chefName: b.event.chef.displayName, bookingId: b.id, eventTitle: b.event.title, startsAt: b.event.startsAt,
-        bookingType: b.type, partySize: b.partySize, amountCents: b.amountCents,
-        paymentHandle: b.event.chef.paymentHandle, paymentNote: b.event.chef.paymentNote,
-        expiresAt: requestExpiresAt(b.createdAt, b.event.startsAt),
-      }),
-    });
+    const p = {
+      guestName: nameOf(b.guest), chefName: b.event.chef.displayName, bookingId: b.id, eventTitle: b.event.title, startsAt: b.event.startsAt,
+      bookingType: b.type, partySize: b.partySize, amountCents: b.amountCents,
+      paymentHandle: b.event.chef.paymentHandle, paymentNote: b.event.chef.paymentNote,
+      expiresAt: requestExpiresAt(b.createdAt, b.event.startsAt),
+    };
+    return deliver(m, b.guest, { email: T.requestReceivedEmail(p), sms: S.requestReceivedText(p) });
   });
 }
 
 /** The chef declined a request (to the guest), or a confirmed guest cancelled (to the chef). */
-export function notifyBookingCancelledByOther(db: Db, mailer: Mailer, bookingId: string, recipient: "guest" | "chef") {
+export function notifyBookingCancelledByOther(db: Db, m: Messenger, bookingId: string, recipient: "guest" | "chef") {
   return attempt(`booking cancelled ${bookingId} → ${recipient}`, async () => {
     const b = await db.booking.findUnique({
       where: { id: bookingId },
       select: {
         partySize: true, amountCents: true,
-        guest: { select: { name: true, email: true } },
-        event: { select: { id: true, title: true, startsAt: true, chef: { select: { displayName: true, user: { select: { email: true } } } } } },
+        guest: { select: CONTACT },
+        event: { select: { id: true, title: true, startsAt: true, chef: { select: { displayName: true, user: { select: CONTACT } } } } },
       },
     });
     if (!b) return false;
-    return mailer.send({
-      to: recipient === "chef" ? b.event.chef.user.email : b.guest.email,
-      ...T.bookingCancelledEmail({
-        recipient, guestName: nameOf(b.guest), chefName: b.event.chef.displayName, eventId: b.event.id, eventTitle: b.event.title, startsAt: b.event.startsAt,
-        partySize: b.partySize, amountCents: b.amountCents,
-      }),
-    });
+    const p = {
+      recipient, guestName: nameOf(b.guest), chefName: b.event.chef.displayName, eventId: b.event.id, eventTitle: b.event.title, startsAt: b.event.startsAt,
+      partySize: b.partySize, amountCents: b.amountCents,
+    };
+    return deliver(m, recipient === "chef" ? b.event.chef.user : b.guest, { email: T.bookingCancelledEmail(p), sms: S.bookingCancelledText(p) });
   });
 }
 
 /** To the guest: the chef marked their booking paid. */
-export function notifyBookingConfirmed(db: Db, mailer: Mailer, bookingId: string) {
+export function notifyBookingConfirmed(db: Db, m: Messenger, bookingId: string) {
   return attempt(`booking confirmed ${bookingId}`, async () => {
     const b = await db.booking.findUnique({
       where: { id: bookingId },
       select: {
         id: true, partySize: true, amountCents: true,
-        guest: { select: { name: true, email: true } },
+        guest: { select: CONTACT },
         event: { select: { title: true, startsAt: true, chef: { select: { displayName: true } }, venue: { select: { neighborhood: true, crossStreets: true } } } },
       },
     });
     if (!b) return false;
-    return mailer.send({
-      to: b.guest.email,
-      ...T.bookingConfirmedEmail({
-        guestName: nameOf(b.guest), chefName: b.event.chef.displayName, bookingId: b.id, eventTitle: b.event.title, startsAt: b.event.startsAt,
-        partySize: b.partySize, amountCents: b.amountCents, neighborhood: b.event.venue.neighborhood, crossStreets: b.event.venue.crossStreets,
-      }),
-    });
+    const p = {
+      guestName: nameOf(b.guest), chefName: b.event.chef.displayName, bookingId: b.id, eventTitle: b.event.title, startsAt: b.event.startsAt,
+      partySize: b.partySize, amountCents: b.amountCents, neighborhood: b.event.venue.neighborhood, crossStreets: b.event.venue.crossStreets,
+    };
+    return deliver(m, b.guest, { email: T.bookingConfirmedEmail(p), sms: S.bookingConfirmedText(p) });
   });
 }
 
 /** To the guest: their unpaid request expired. */
-export function notifyRequestExpired(db: Db, mailer: Mailer, bookingId: string, now = new Date()) {
+export function notifyRequestExpired(db: Db, m: Messenger, bookingId: string, now = new Date()) {
   return attempt(`request expired ${bookingId}`, async () => {
     const b = await db.booking.findUnique({
       where: { id: bookingId },
-      select: { guest: { select: { name: true, email: true } }, event: { select: { id: true, title: true, startsAt: true, durationMin: true } } },
+      select: { guest: { select: CONTACT }, event: { select: { id: true, title: true, startsAt: true, durationMin: true } } },
     });
     if (!b) return false;
     const eventOver = b.event.startsAt.getTime() + b.event.durationMin * 60_000 <= now.getTime();
-    return mailer.send({
-      to: b.guest.email,
-      ...T.requestExpiredEmail({ guestName: nameOf(b.guest), eventId: b.event.id, eventTitle: b.event.title, startsAt: b.event.startsAt, eventOver }),
-    });
+    const p = { guestName: nameOf(b.guest), eventId: b.event.id, eventTitle: b.event.title, startsAt: b.event.startsAt, eventOver };
+    return deliver(m, b.guest, { email: T.requestExpiredEmail(p), sms: S.requestExpiredText(p) });
   });
 }
 
 /**
  * To every guest whose booking was released, plus the chef when the system
- * cancelled (under minimum). Returns how many emails went out.
+ * cancelled (under minimum). Returns how many messages went out.
  */
 export async function notifyEventCancelled(
   db: Db,
-  mailer: Mailer,
+  m: Messenger,
   eventId: string,
   cancelled: CancelledBooking[],
   opts: { reason: string; cancelledBy: "chef" | "system" },
@@ -144,33 +157,27 @@ export async function notifyEventCancelled(
   await attempt(`event cancelled ${eventId}`, async () => {
     const event = await db.event.findUnique({
       where: { id: eventId },
-      select: { title: true, startsAt: true, chef: { select: { displayName: true, user: { select: { name: true, email: true } } } } },
+      select: { title: true, startsAt: true, chef: { select: { displayName: true, user: { select: CONTACT } } } },
     });
     if (!event) return false;
     const wasPaid = new Map(cancelled.map((c) => [c.id, c.status === "CONFIRMED"]));
     const bookings = await db.booking.findMany({
       where: { id: { in: cancelled.map((c) => c.id) } },
-      select: { id: true, amountCents: true, guest: { select: { name: true, email: true } } },
+      select: { id: true, amountCents: true, guest: { select: CONTACT } },
     });
     for (const b of bookings) {
-      const ok = await mailer.send({
-        to: b.guest.email,
-        ...T.eventCancelledEmail({
-          recipientName: nameOf(b.guest), recipient: "guest", chefName: event.chef.displayName, eventTitle: event.title, startsAt: event.startsAt,
-          reason: opts.reason, cancelledBy: opts.cancelledBy, paidCents: wasPaid.get(b.id) ? b.amountCents : 0,
-        }),
-      });
-      if (ok) sent++;
+      const p = {
+        recipientName: nameOf(b.guest), recipient: "guest" as const, chefName: event.chef.displayName, eventTitle: event.title, startsAt: event.startsAt,
+        reason: opts.reason, cancelledBy: opts.cancelledBy, paidCents: wasPaid.get(b.id) ? b.amountCents : 0,
+      };
+      if (await deliver(m, b.guest, { email: T.eventCancelledEmail(p), sms: S.eventCancelledText(p) })) sent++;
     }
     if (opts.cancelledBy === "system") {
-      const ok = await mailer.send({
-        to: event.chef.user.email,
-        ...T.eventCancelledEmail({
-          recipientName: event.chef.displayName, recipient: "chef", chefName: event.chef.displayName, eventTitle: event.title, startsAt: event.startsAt,
-          reason: opts.reason, cancelledBy: opts.cancelledBy, bookingsCancelled: cancelled.length,
-        }),
-      });
-      if (ok) sent++;
+      const p = {
+        recipientName: event.chef.displayName, recipient: "chef" as const, chefName: event.chef.displayName, eventTitle: event.title, startsAt: event.startsAt,
+        reason: opts.reason, cancelledBy: opts.cancelledBy, bookingsCancelled: cancelled.length,
+      };
+      if (await deliver(m, event.chef.user, { email: T.eventCancelledEmail(p), sms: S.eventCancelledText(p) })) sent++;
     }
     return true;
   });
@@ -178,13 +185,13 @@ export async function notifyEventCancelled(
 }
 
 /** To a confirmed guest: the exact address. The only place the venue address leaves the database for a guest. */
-export function notifyAddressReveal(db: Db, mailer: Mailer, bookingId: string) {
+export function notifyAddressReveal(db: Db, m: Messenger, bookingId: string) {
   return attempt(`address reveal ${bookingId}`, async () => {
     const b = await db.booking.findUnique({
       where: { id: bookingId },
       select: {
         id: true, partySize: true, dietaryNotes: true,
-        guest: { select: { name: true, email: true } },
+        guest: { select: CONTACT },
         event: {
           select: {
             title: true, startsAt: true, byobNote: true,
@@ -196,59 +203,54 @@ export function notifyAddressReveal(db: Db, mailer: Mailer, bookingId: string) {
       },
     });
     if (!b) return false;
-    return mailer.send({
-      to: b.guest.email,
-      ...T.addressRevealEmail({
-        guestName: nameOf(b.guest), chefName: b.event.chef.displayName, bookingId: b.id, eventTitle: b.event.title, startsAt: b.event.startsAt,
-        partySize: b.partySize, address: b.event.venue.address, neighborhood: b.event.venue.neighborhood, crossStreets: b.event.venue.crossStreets,
-        byobNote: b.event.byobNote, dietaryNotes: b.dietaryNotes,
-      }),
-    });
+    const p = {
+      guestName: nameOf(b.guest), chefName: b.event.chef.displayName, bookingId: b.id, eventTitle: b.event.title, startsAt: b.event.startsAt,
+      partySize: b.partySize, address: b.event.venue.address, neighborhood: b.event.venue.neighborhood, crossStreets: b.event.venue.crossStreets,
+      byobNote: b.event.byobNote, dietaryNotes: b.dietaryNotes,
+    };
+    return deliver(m, b.guest, { email: T.addressRevealEmail(p), sms: S.addressRevealText(p) });
   });
 }
 
 /** To an attended guest: please review the chef. */
-export function notifyReviewRequest(db: Db, mailer: Mailer, bookingId: string) {
+export function notifyReviewRequest(db: Db, m: Messenger, bookingId: string) {
   return attempt(`review request ${bookingId}`, async () => {
     const b = await db.booking.findUnique({
       where: { id: bookingId },
-      select: { id: true, guest: { select: { name: true, email: true } }, event: { select: { title: true, startsAt: true, chef: { select: { displayName: true } } } } },
+      select: { id: true, guest: { select: CONTACT }, event: { select: { title: true, startsAt: true, chef: { select: { displayName: true } } } } },
     });
     if (!b) return false;
-    return mailer.send({
-      to: b.guest.email,
-      ...T.reviewRequestEmail({ guestName: nameOf(b.guest), chefName: b.event.chef.displayName, bookingId: b.id, eventTitle: b.event.title, startsAt: b.event.startsAt }),
-    });
+    const p = { guestName: nameOf(b.guest), chefName: b.event.chef.displayName, bookingId: b.id, eventTitle: b.event.title, startsAt: b.event.startsAt };
+    return deliver(m, b.guest, { email: T.reviewRequestEmail(p), sms: S.reviewRequestText(p) });
   });
 }
 
-/** To the applicant: approved or rejected (suspensions are not emailed). */
-export function notifyChefDecision(db: Db, mailer: Mailer, profileId: string) {
+/** To the applicant: approved or rejected (suspensions are not sent). Email first: the note can be long. */
+export function notifyChefDecision(db: Db, m: Messenger, profileId: string) {
   return attempt(`chef decision ${profileId}`, async () => {
     const p = await db.chefProfile.findUnique({
       where: { id: profileId },
-      select: { displayName: true, status: true, reviewNote: true, user: { select: { email: true } } },
+      select: { displayName: true, status: true, reviewNote: true, user: { select: CONTACT } },
     });
     if (!p || (p.status !== "APPROVED" && p.status !== "REJECTED")) return false;
-    return mailer.send({ to: p.user.email, ...T.chefApplicationDecidedEmail({ chefName: p.displayName, decision: p.status, note: p.reviewNote }) });
+    const props = { chefName: p.displayName, decision: p.status, note: p.reviewNote };
+    return deliver(m, p.user, { email: T.chefApplicationDecidedEmail(props), sms: S.chefApplicationDecidedText(props) }, "email");
   });
 }
 
 /** To the chef after a dinner ends: mark attendance. */
-export function notifyMarkAttendance(db: Db, mailer: Mailer, eventId: string) {
+export function notifyMarkAttendance(db: Db, m: Messenger, eventId: string) {
   return attempt(`mark attendance ${eventId}`, async () => {
     const e = await db.event.findUnique({
       where: { id: eventId },
       select: {
         id: true, title: true, startsAt: true,
-        chef: { select: { displayName: true, user: { select: { email: true } } } },
+        chef: { select: { displayName: true, user: { select: CONTACT } } },
         _count: { select: { bookings: { where: { status: "CONFIRMED" } } } },
       },
     });
     if (!e) return false;
-    return mailer.send({
-      to: e.chef.user.email,
-      ...T.markAttendanceEmail({ chefName: e.chef.displayName, eventId: e.id, eventTitle: e.title, startsAt: e.startsAt, confirmedBookings: e._count.bookings }),
-    });
+    const p = { chefName: e.chef.displayName, eventId: e.id, eventTitle: e.title, startsAt: e.startsAt, confirmedBookings: e._count.bookings };
+    return deliver(m, e.chef.user, { email: T.markAttendanceEmail(p), sms: S.markAttendanceText(p) });
   });
 }

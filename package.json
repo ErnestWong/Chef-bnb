@@ -29,6 +29,7 @@
     "@prisma/adapter-pg": "^7.10.1",
     "@prisma/client": "^7.10.1",
     "@react-email/components": "1.0.12",
+    "libphonenumber-js": "~1.12.43",
     "next": "16.4.6",
     "next-auth": "5.0.0-beta.32",
     "pg": "^8.23.1",

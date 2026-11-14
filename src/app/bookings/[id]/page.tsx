@@ -105,7 +105,7 @@ async function BookingDetails({ params, searchParams }: { params: PageProps<"/bo
             {soon ? " The chef confirms payments by hand, so the sooner the better." : " Unpaid requests expire then."}
           </p>
           <p className="mt-2 text-xs text-muted">
-            Put your name and the dinner in the payment memo. The chef marks the booking paid once the money arrives, and you&apos;ll get an email when they do. We&apos;ve also emailed you these details.
+            Put your name and the dinner in the payment memo. The chef marks the booking paid once the money arrives, and you&apos;ll get a text (or an email) when they do. We&apos;ve also sent you these details.
           </p>
         </section>
       )}
@@ -128,14 +128,14 @@ async function BookingDetails({ params, searchParams }: { params: PageProps<"/bo
                   Open in Maps
                 </a>
               </p>
-              <p className="mt-3 text-xs text-muted">Also emailed to you on {formatEventDateTime(revealed.sentAt)}. Please keep the address to your party.</p>
+              <p className="mt-3 text-xs text-muted">Also sent to you on {formatEventDateTime(revealed.sentAt)}. Please keep the address to your party.</p>
             </>
           ) : (
             <p className="mt-2">
               Your payment is confirmed.{" "}
               {revealDay <= now
-                ? "The exact address goes out by email inside the last 48 hours and will show here as soon as it's sent."
-                : `The exact address arrives by email about ${RULES.ADDRESS_REVEAL_HOURS} hours before the dinner, around ${formatEventDay(revealDay)}, and will show here too.`}
+                ? "The exact address goes out by text (or email) inside the last 48 hours and will show here as soon as it's sent."
+                : `The exact address arrives by text (or email) about ${RULES.ADDRESS_REVEAL_HOURS} hours before the dinner, around ${formatEventDay(revealDay)}, and will show here too.`}
             </p>
           )}
           <p className="mt-2">It&apos;s BYOB — bring something to drink.</p>

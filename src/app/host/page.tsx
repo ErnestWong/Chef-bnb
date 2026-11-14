@@ -97,12 +97,13 @@ export default function HostPage() {
             </ul>
             <p className="mt-6 max-w-prose text-sm text-muted">
               Not sure you qualify? Apply anyway and say so in the credentials box; we read every one. Want to see what a dinner looks like first?{" "}
-              <Link href="/events" className="text-accent underline-offset-2 hover:underline">Browse the calendar</Link>.
+              <Link href="/events" className="text-accent underline-offset-2 hover:underline">Browse the calendar</Link>. The full rules for hosts are in the{" "}
+              <Link href="/terms#chefs" className="text-accent underline-offset-2 hover:underline">terms</Link>.
             </p>
           </div>
           <aside className="flex h-fit flex-col gap-4 rounded-2xl border border-line bg-surface p-6">
             <p className="font-display text-2xl">Ready when you are</p>
-            <p className="text-sm text-muted">Sign in with your email, answer three screens, and you&apos;re in the queue. You can publish your first dinner the moment you&apos;re approved.</p>
+            <p className="text-sm text-muted">Sign in with your phone, answer three screens, and you&apos;re in the queue. You can publish your first dinner the moment you&apos;re approved.</p>
             <ButtonLink href="/chef/apply">Start your application</ButtonLink>
           </aside>
         </Container>
