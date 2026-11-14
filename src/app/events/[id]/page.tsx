@@ -36,7 +36,7 @@ async function EventDetails({ params }: { params: PageProps<"/events/[id]">["par
 
   return (
     <>
-      <Container className="py-12">
+      <Container className="py-12 pb-28 lg:pb-12">
         <p className="text-sm text-muted">
           <Link href="/events" className="hover:text-accent">Dinners</Link> / {formatEventDay(event.startsAt)}
         </p>
@@ -85,7 +85,7 @@ async function EventDetails({ params }: { params: PageProps<"/events/[id]">["par
                     <span className="font-medium">BYOB.</span> {event.byobNote ?? "Bring whatever you'd like to drink; nothing is sold or included."}
                   </li>
                   <li>
-                    <span className="font-medium">Table of {event.maxGuests} at most.</span> The chef needs at least {event.minGuests} confirmed guests and manages cancellations manually.
+                    <span className="font-medium">Table of {event.maxGuests} at most.</span> The dinner runs if at least {event.minGuests} confirm by {RULES.GO_NO_GO_HOURS} hours before; otherwise it&apos;s cancelled and everyone is emailed.
                   </li>
                   {event.dietaryNotes && (
                     <li>
@@ -141,7 +141,7 @@ async function EventDetails({ params }: { params: PageProps<"/events/[id]">["par
               <ButtonLink href={`/events/${event.id}/book`}>Request seats</ButtonLink>
             )}
             <p className="text-xs text-muted">
-              You pay the chef directly; a seat is confirmed once they mark it paid. Check your booking page for payment details and status.
+              You pay the chef directly; a seat is confirmed once they mark it paid. Unpaid requests expire after {RULES.REQUEST_EXPIRY_HOURS} hours.
             </p>
 
             <div className="border-t border-line pt-5">
@@ -157,6 +157,19 @@ async function EventDetails({ params }: { params: PageProps<"/events/[id]">["par
           </aside>
         </div>
       </Container>
+      {!past && !soldOut && (
+        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface/95 px-4 py-3 backdrop-blur lg:hidden">
+          <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
+            <div>
+              <p className="font-display text-xl">
+                {formatMoney(event.priceCents)} <span className="font-sans text-sm text-muted">/ seat</span>
+              </p>
+              <p className="text-xs text-muted">{pluralize(event.seatsLeft, "seat")} left</p>
+            </div>
+            <ButtonLink href={`/events/${event.id}/book`}>Request seats</ButtonLink>
+          </div>
+        </div>
+      )}
     </>
   );
 }

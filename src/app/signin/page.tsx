@@ -16,7 +16,7 @@ const ERRORS: Record<string, string> = {
 export default function SignInPage({ searchParams }: PageProps<"/signin">) {
   return (
     <main className="mx-auto w-full max-w-sm flex-1 px-6 py-16">
-      <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>
+      <h1 className="font-display text-4xl">Sign in</h1>
       <Suspense fallback={<p className="mt-6 text-sm text-muted">Loading…</p>}>
         <SignInForm searchParams={searchParams} />
       </Suspense>
@@ -61,7 +61,7 @@ async function SignInForm({ searchParams }: { searchParams: PageProps<"/signin">
             required
             autoComplete="email"
             placeholder="you@example.com"
-            className="rounded-md border border-foreground/20 bg-transparent px-3 py-2"
+            className="rounded-md border border-line bg-surface px-3 py-2"
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
@@ -71,12 +71,12 @@ async function SignInForm({ searchParams }: { searchParams: PageProps<"/signin">
             type="text"
             maxLength={80}
             autoComplete="name"
-            className="rounded-md border border-foreground/20 bg-transparent px-3 py-2"
+            className="rounded-md border border-line bg-surface px-3 py-2"
           />
         </label>
         <button
           type="submit"
-          className="rounded-md bg-accent px-4 py-2 font-medium text-white"
+          className="rounded-full bg-accent px-4 py-2.5 font-medium text-white hover:opacity-90"
         >
           Continue
         </button>

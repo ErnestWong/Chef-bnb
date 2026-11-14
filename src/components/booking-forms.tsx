@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import type { BookingType } from "@/generated/prisma/enums";
 import { requestSeatsAction, transitionBookingAction, type ActionResult } from "@/app/actions/bookings";
 import { RULES } from "@/lib/bookings/rules";
@@ -28,6 +28,16 @@ export function RequestSeatsForm({ event }: { event: EventForBooking }) {
     { value: "BUYOUT", label: "Buy out the table", hint: `${event.minGuests}–${event.maxGuests} guests; the whole dinner is yours.`, disabled: !buyoutPossible },
   ];
   const firstEnabled = options.find((o) => !o.disabled)?.value;
+  const [type, setType] = useState<BookingType | undefined>(firstEnabled);
+  // Party size follows the booking type: a solo seat is exactly 1; a group is
+  // 2 to the cap (or what's left); a buyout is the chef's min to max.
+  const range = type === "GROUP" ? { min: 2, max: groupMax } : type === "BUYOUT" ? { min: event.minGuests, max: event.maxGuests } : { min: 1, max: 1 };
+  const [partySize, setPartySize] = useState(range.min);
+  const choose = (next: BookingType) => {
+    setType(next);
+    const r = next === "GROUP" ? { min: 2, max: groupMax } : next === "BUYOUT" ? { min: event.minGuests, max: event.maxGuests } : { min: 1, max: 1 };
+    setPartySize((current) => Math.min(Math.max(current, r.min), r.max));
+  };
 
   return (
     <form action={action} className="flex flex-col gap-5">
@@ -38,7 +48,7 @@ export function RequestSeatsForm({ event }: { event: EventForBooking }) {
           .filter((o) => types.includes(o.value))
           .map((o) => (
             <label key={o.value} className={`flex items-start gap-3 rounded-xl border border-line p-3 ${o.disabled ? "opacity-50" : "cursor-pointer hover:border-accent"}`}>
-              <input type="radio" name="type" value={o.value} defaultChecked={o.value === firstEnabled} disabled={o.disabled} required className="mt-1 accent-accent" />
+              <input type="radio" name="type" value={o.value} checked={type === o.value} onChange={() => choose(o.value)} disabled={o.disabled} required className="mt-1 accent-accent" />
               <span>
                 <span className="block font-medium">{o.label}</span>
                 <span className="block text-xs text-muted">{o.hint}</span>
@@ -48,8 +58,22 @@ export function RequestSeatsForm({ event }: { event: EventForBooking }) {
       </fieldset>
       <label className="flex flex-col gap-1 text-sm">
         Party size
-        <input type="number" name="partySize" min={1} max={event.maxGuests} defaultValue={1} required className={`${field} w-32`} />
-        <span className="text-xs text-muted">Solo seat = 1 · group 2–{RULES.GROUP_CAP} · buyout {event.minGuests}–{event.maxGuests}</span>
+        <input
+          type="number"
+          name="partySize"
+          min={range.min}
+          max={range.max}
+          value={partySize}
+          onChange={(e) => setPartySize(Number(e.target.value))}
+          readOnly={range.min === range.max}
+          required
+          className={`${field} w-32 ${range.min === range.max ? "text-muted" : ""}`}
+        />
+        <span className="text-xs text-muted">
+          {type === "SEAT" && "One seat, just you."}
+          {type === "GROUP" && `${range.min}–${range.max} guests, seated together.`}
+          {type === "BUYOUT" && `${range.min}–${range.max} guests; you pay for at least ${event.minGuests}.`}
+        </span>
       </label>
       <label className="flex flex-col gap-1 text-sm">
         Dietary notes <span className="text-muted">(optional, shared with the chef)</span>
@@ -64,7 +88,7 @@ export function RequestSeatsForm({ event }: { event: EventForBooking }) {
         {pending ? "Requesting…" : "Request seats"}
       </button>
       <p className="text-xs text-muted">
-        Nothing is charged here. You&apos;ll get the chef&apos;s payment details next. Your request holds seats until the chef confirms it or the booking is cancelled.
+        Nothing is charged here. You&apos;ll get the chef&apos;s payment details next; the seat is held for {RULES.REQUEST_EXPIRY_HOURS} hours while you pay.
       </p>
     </form>
   );

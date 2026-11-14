@@ -48,6 +48,26 @@ TEST_DATABASE_URL=postgresql://... pnpm test
 
 CI starts an isolated Postgres service and applies migrations before verification, so database tests run on every PR. The race tests cover duplicate confirmations, cancellation versus requests/confirmation, and capacity edits/unpublishing versus requests. Event edits and booking transitions share the event row lock and validate state after acquiring it.
 
+## Local environment
+
+No Postgres on the machine? `pnpm db:local` starts an embedded one (real Postgres binaries, downloaded into `node_modules`, data in `./.local/pg`). Then, in another terminal:
+
+```sh
+pnpm db:deploy      # apply migrations (needs Node 22.12+ for the Prisma CLI; see .nvmrc)
+pnpm db:seed        # 5 chefs x 5 dinners, 5 guests, bookings in every state
+pnpm dev            # http://localhost:3000
+```
+
+Sign in with any email (no password) at `/signin`. Seeded accounts: `casa.wong@example.test` (chef), `guest1@example.test` (guest with bookings), `admin@example.test` (admin, via `ADMIN_EMAILS` in `.env.local`). Re-run `pnpm db:seed` any time to reset the data.
+
+## Email and scheduled jobs
+
+Emails are React Email templates in `src/lib/email/templates/`, sent through Resend when `RESEND_API_KEY` is set and printed to the server log otherwise. Five idempotent jobs (expire unpaid requests, go/no-go at the cutoff, address reveal, close finished dinners, review requests) run from `GET /api/cron`, which requires `Authorization: Bearer $CRON_SECRET`; Vercel sends that header itself. The admin page has a "Run scheduled jobs now" button for testing. `vercel.json` schedules the route daily at 13:00 UTC because the Hobby plan allows one run a day; on Pro, switch to `0 * * * *`.
+
+```sh
+curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron
+```
+
 ## Scripts
 
 | Script | What |

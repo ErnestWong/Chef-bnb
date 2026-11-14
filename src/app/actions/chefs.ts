@@ -6,6 +6,8 @@ import { z } from "zod";
 import { getDb } from "@/lib/db";
 import { requireRole, requireUser } from "@/lib/auth/session";
 import { ApplyError, applySchema, createApplication, reviewApplication } from "@/lib/chefs/apply";
+import { getMailer } from "@/lib/email/mailer";
+import { notifyChefDecision } from "@/lib/email/notify";
 import type { ActionResult } from "./bookings";
 
 export type FieldErrors = Record<string, string>;
@@ -65,6 +67,7 @@ export async function reviewChefAction(_prev: ActionResult | null, formData: For
   });
   if (!parsed.success) return { ok: false, error: "Invalid request." };
   await reviewApplication(getDb(), parsed.data);
+  if (parsed.data.decision !== "SUSPENDED") await notifyChefDecision(getDb(), getMailer(), parsed.data.profileId);
   revalidatePath("/admin/chefs");
   revalidatePath(`/admin/chefs/${parsed.data.profileId}`);
   revalidatePath("/chefs");

@@ -254,6 +254,8 @@ model Event {
   allowedBookingTypes BookingType[] @map("allowed_booking_types")
   /// Below min confirmed guests at this time → event auto-cancels. Default: starts_at − 72 h.
   goNoGoAt            DateTime      @map("go_no_go_at")
+  /// Set by the go/no-go job once it has looked at this event, so it decides exactly once.
+  goNoGoCheckedAt     DateTime?     @map("go_no_go_checked_at")
   mode                EventMode     @default(UNSOLD)
   status              EventStatus   @default(DRAFT)
   /// Denormalized from venue for discovery filters.
@@ -277,6 +279,7 @@ model Event {
   @@index([startsAt, status])
   @@index([borough])
   @@index([chefId])
+  @@index([status, goNoGoAt])
   @@map("events")
 }
 
@@ -306,6 +309,8 @@ model Booking {
   @@index([eventId, status])
   @@index([guestUserId, status])
   @@index([status, createdAt])
+  @@index([status, addressSentAt])
+  @@index([status, reviewRequestedAt])
   @@map("bookings")
 }
 

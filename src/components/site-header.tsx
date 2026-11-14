@@ -7,11 +7,11 @@ import { hasRole } from "@/lib/auth/roles";
 export function SiteHeader() {
   return (
     <header className="border-b border-line">
-      <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-6 px-6 py-4">
-        <Link href="/" className="font-display text-xl font-semibold">
+      <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-3 sm:px-6 sm:py-4">
+        <Link href="/" className="font-display whitespace-nowrap text-xl font-semibold">
           Chef-bnb
         </Link>
-        <nav className="flex items-center gap-5 text-sm">
+        <nav className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm sm:gap-5">
           <Link href="/events" className="hover:text-accent">
             Dinners
           </Link>
@@ -45,7 +45,7 @@ async function UserMenu() {
       {hasRole(user.roles, "ADMIN") && <Link href="/admin" className="hover:text-accent">Admin</Link>}
       {hasRole(user.roles, "CHEF") && <Link href="/chef" className="hover:text-accent">Chef</Link>}
       <Link href="/bookings" className="hover:text-accent">Bookings</Link>
-      <Link href="/account" className="font-medium hover:text-accent">
+      <Link href="/account" className="max-w-[8rem] truncate font-medium hover:text-accent sm:max-w-[14rem]" title={user.name ?? user.email}>
         {user.name ?? user.email}
       </Link>
       <form action={signOutAction}>
