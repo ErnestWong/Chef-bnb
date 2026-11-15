@@ -36,7 +36,7 @@ async function EventsBrowser({ searchParams }: { searchParams: PageProps<"/event
 
   const tab = (view: "list" | "calendar", label: string) => (
     <Link
-      href={`/events${filterQuery({ ...filters, view }, view === "list" ? { view: undefined, month: undefined } : {})}`}
+      href={`/events${filterQuery({ ...filters, view }, view === "list" ? { month: undefined } : {})}`}
       aria-current={filters.view === view ? "page" : undefined}
       className={`rounded-full px-4 py-1.5 text-sm ${filters.view === view ? "bg-foreground text-background" : "border border-line hover:border-accent"}`}
     >
@@ -50,8 +50,8 @@ async function EventsBrowser({ searchParams }: { searchParams: PageProps<"/event
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted">{pluralize(events.length, "dinner")}</p>
         <div className="flex gap-2">
-          {tab("list", "List")}
           {tab("calendar", "Calendar")}
+          {tab("list", "List")}
         </div>
       </div>
       {filters.view === "calendar" ? (
