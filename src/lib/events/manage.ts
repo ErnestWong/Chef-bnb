@@ -5,6 +5,7 @@ import type { Borough } from "@/generated/prisma/enums";
 import { RULES } from "@/lib/bookings/rules";
 import { APP_TIME_ZONE } from "@/lib/format";
 import { BOROUGHS } from "@/lib/queries/event-filters";
+import { boroughOf, canonicalNeighborhood } from "@/lib/nyc/neighborhoods";
 
 const HOUR = 3600 * 1000;
 
@@ -60,7 +61,8 @@ export const eventSchema = z
     // Venue: an existing one the chef owns, or a new one.
     venueId: z.string().optional(),
     venueAddress: optional(z.string().trim().min(5).max(200)),
-    venueNeighborhood: optional(z.string().trim().min(2).max(60)),
+    venueNeighborhood: optional(z.string().trim().min(2).max(60).refine((n) => canonicalNeighborhood(n) !== null, "Pick a neighborhood from the list.")),
+    /** Derived from the neighborhood; accepted for older clients. */
     venueBorough: z.enum(BOROUGHS).optional().or(z.literal("")),
     venueCrossStreets: optional(z.string().trim().min(3).max(80)),
     venueLat: z.coerce.number().min(40.4).max(41).optional().or(z.nan()),
@@ -72,8 +74,8 @@ export const eventSchema = z
     intent: z.enum(["draft", "publish"]).default("draft"),
   })
   .refine((e) => e.minGuests <= e.maxGuests, { message: "Minimum guests can't exceed the maximum.", path: ["minGuests"] })
-  .refine((e) => e.venueId || (e.venueAddress && e.venueNeighborhood && e.venueBorough && e.venueCrossStreets), {
-    message: "Pick a venue or fill in a new one (address, neighborhood, borough, cross streets).",
+  .refine((e) => e.venueId || (e.venueAddress && e.venueNeighborhood && e.venueCrossStreets), {
+    message: "Pick a venue or fill in a new one (address, neighborhood, cross streets).",
     path: ["venueId"],
   });
 
@@ -126,14 +128,15 @@ export async function saveEvent(db: Db, userId: string, input: EventInput, event
       if (!venue) throw new EventError("venue_not_yours");
       borough = venue.borough;
     } else {
-      borough = input.venueBorough as Borough;
+      const neighborhood = canonicalNeighborhood(input.venueNeighborhood!)!;
+      borough = boroughOf(neighborhood)!;
       const fallback = BOROUGH_CENTROIDS[borough];
       const venue = await tx.venue.create({
         data: {
           ownerUserId: userId,
           type: "CHEF_HOME",
           address: input.venueAddress!,
-          neighborhood: input.venueNeighborhood!,
+          neighborhood,
           borough,
           crossStreets: input.venueCrossStreets!,
           lat: roundCoord(Number.isFinite(input.venueLat) ? (input.venueLat as number) : fallback.lat),

@@ -19,7 +19,7 @@ const STEPS = [
 const STEP_FIELDS: readonly (readonly string[])[] = [
   ["email", "displayName", "bio", "credentials", "website", "instagram"],
   ["cuisineIds", "homeBorough", "hosting", "needsFoh", "needsServers"],
-  ["paymentHandle", "paymentNote", "foodCertNumber"],
+  ["paymentHandle", "paymentNote"],
 ];
 
 /** Same shape the server action builds, so client and server validation agree. */
@@ -39,7 +39,6 @@ function rawValues(form: HTMLFormElement) {
     needsServers: fd.get("needsServers") === "on",
     paymentHandle: fd.get("paymentHandle"),
     paymentNote: fd.get("paymentNote") || undefined,
-    foodCertNumber: fd.get("foodCertNumber") || undefined,
   };
 }
 
@@ -66,7 +65,6 @@ export type ApplyDefaults = Partial<{
   needsServers: boolean;
   paymentHandle: string;
   paymentNote: string;
-  foodCertNumber: string;
 }>;
 
 export function ApplyForm({ cuisines, defaultName, needsEmail = false, defaults = {} }: { cuisines: Cuisine[]; defaultName: string; needsEmail?: boolean; defaults?: ApplyDefaults }) {
@@ -184,7 +182,7 @@ export function ApplyForm({ cuisines, defaultName, needsEmail = false, defaults 
           <input name="displayName" defaultValue={defaults.displayName ?? defaultName} maxLength={60} autoComplete="name" className={fieldClass} />
         </Field>
         <Field
-          label="About you and your food"
+          label="Your table, in your words"
           hint={
             <span className="flex justify-between gap-4">
               <span>What you cook, where you learned it, what a night at your table is like.</span>
@@ -203,8 +201,8 @@ export function ApplyForm({ cuisines, defaultName, needsEmail = false, defaults 
             className={fieldClass}
           />
         </Field>
-        <Field label="Credentials" hint="Restaurants, school, certificates. Optional, but it speeds up approval." error={errors.credentials}>
-          <input name="credentials" maxLength={300} defaultValue={defaults.credentials} placeholder="Line cook, 6 years; NYC Food Protection Certificate" className={fieldClass} />
+        <Field label="Credentials" hint="Restaurants, school, pop-ups, supper clubs. Optional, but it speeds up approval." error={errors.credentials}>
+          <input name="credentials" maxLength={300} defaultValue={defaults.credentials} placeholder="Line cook, 6 years; monthly supper club since 2024" className={fieldClass} />
         </Field>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Instagram" hint="Optional" error={errors.instagram}>
@@ -294,9 +292,6 @@ export function ApplyForm({ cuisines, defaultName, needsEmail = false, defaults 
             <input name="paymentNote" maxLength={200} defaultValue={defaults.paymentNote} className={fieldClass} />
           </Field>
         </div>
-        <Field label="NYC Food Protection Certificate number" hint="Optional now; it matters for approval. Leave it blank if you're still getting one." error={errors.foodCertNumber}>
-          <input name="foodCertNumber" maxLength={40} defaultValue={defaults.foodCertNumber} className={`${fieldClass} sm:w-1/2`} />
-        </Field>
 
         <div className="rounded-2xl border border-line bg-surface p-4 text-sm">
           <p className="font-medium">What happens next</p>

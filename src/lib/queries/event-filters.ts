@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { boroughOf, canonicalNeighborhood } from "@/lib/nyc/neighborhoods";
 
 export const BOROUGHS = ["MANHATTAN", "BROOKLYN", "QUEENS", "BRONX", "STATEN_ISLAND"] as const;
 
@@ -8,6 +9,8 @@ const schema = z.object({
   from: isoDay.optional(),
   to: isoDay.optional(),
   borough: z.enum(BOROUGHS).optional(),
+  /** A borough code or a listed neighborhood name; the one "Where" dropdown. */
+  where: z.string().trim().max(80).optional(),
   cuisine: z.string().regex(/^[a-z0-9-]+$/).optional(),
   maxPrice: z.coerce.number().int().positive().max(10_000).optional(),
   partySize: z.coerce.number().int().min(1).max(10).optional(),
@@ -20,6 +23,8 @@ export type EventFilters = {
   from?: Date;
   to?: Date;
   borough?: (typeof BOROUGHS)[number];
+  /** Canonical neighborhood name; implies `borough`. */
+  neighborhood?: string;
   cuisine?: string;
   /** Dollars, as typed by the user. */
   maxPrice?: number;
@@ -47,12 +52,26 @@ export function parseEventFilters(raw: RawParams, now = new Date()): EventFilter
   const parsed = schema.safeParse(input);
   const data = parsed.success ? parsed.data : fallbackParse(input);
 
+  let borough = data.borough;
+  let neighborhood: string | undefined;
+  if (data.where) {
+    if ((BOROUGHS as readonly string[]).includes(data.where)) {
+      borough = data.where as (typeof BOROUGHS)[number];
+    } else {
+      const n = canonicalNeighborhood(data.where);
+      if (n) {
+        neighborhood = n;
+        borough = boroughOf(n) ?? undefined;
+      }
+    }
+  }
   const defaultMonth = now.toISOString().slice(0, 7);
   const month = data.month ?? defaultMonth;
   return {
     from: data.from ? new Date(`${data.from}T00:00:00-05:00`) : undefined,
     to: data.to ? new Date(`${data.to}T23:59:59-05:00`) : undefined,
-    borough: data.borough,
+    borough,
+    neighborhood,
     cuisine: data.cuisine,
     maxPrice: data.maxPrice,
     maxPriceCents: data.maxPrice ? data.maxPrice * 100 : undefined,
@@ -81,7 +100,7 @@ export function filterQuery(filters: EventFilters, overrides: Partial<Record<str
   const base: Record<string, string | undefined> = {
     from: filters.from?.toISOString().slice(0, 10),
     to: filters.to?.toISOString().slice(0, 10),
-    borough: filters.borough,
+    where: filters.neighborhood ?? filters.borough,
     cuisine: filters.cuisine,
     maxPrice: filters.maxPrice?.toString(),
     partySize: filters.partySize?.toString(),

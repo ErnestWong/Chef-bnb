@@ -52,10 +52,17 @@ export const PUBLIC_EVENT_SELECT = {
   byob: true,
   byobNote: true,
   dietaryNotes: true,
+  photoUrls: true,
   cuisines: { select: { id: true, name: true, slug: true } },
   venue: { select: PUBLIC_VENUE_SELECT },
   chef: { select: PUBLIC_CHEF_CARD_SELECT },
   menu: { select: { id: true, title: true, courses: true, pdfUrl: true } },
+} satisfies Prisma.EventSelect;
+
+/** A finished dinner with its (anonymous) reviews, for the past-dinners view. */
+export const PUBLIC_PAST_EVENT_SELECT = {
+  ...PUBLIC_EVENT_SELECT,
+  reviews: { where: { removedAt: null }, select: { id: true, rating: true, body: true, createdAt: true }, orderBy: { createdAt: "desc" as const } },
 } satisfies Prisma.EventSelect;
 
 /** Reviews are shown anonymously: no author, no booking link. */

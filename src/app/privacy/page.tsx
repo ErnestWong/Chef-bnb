@@ -25,7 +25,7 @@ const SECTIONS: LegalSection[] = [
         <p>Only what the marketplace needs to work.</p>
         <LegalList items={[
           <><span className="font-medium">Account.</span> Your mobile number, which is how you sign in, and the name you give us. An email address if you add one, which chefs must.</>,
-          <><span className="font-medium">Chef applications and profiles.</span> Display name, bio, credentials, cuisines, Instagram and website if you give them, the borough you host in, whether you need a venue or front-of-house help, your Venmo or Zelle handle, your NYC Food Protection Certificate number, and the address of each venue you host at.</>,
+          <><span className="font-medium">Chef applications and profiles.</span> Display name, bio, credentials, cuisines, Instagram and website if you give them, the borough you host in, whether you need a venue or front-of-house help, your Venmo or Zelle handle, and the address of each venue you host at.</>,
           <><span className="font-medium">Bookings.</span> Which dinner, how many seats, the booking type, dietary notes you write for the chef, and the status history of each booking (requested, paid, confirmed, cancelled, attended, no-show) with who changed it and when.</>,
           <><span className="font-medium">Reviews.</span> Your rating, your words, and which booking they belong to.</>,
           <><span className="font-medium">Technical.</span> Your IP address and the time of certain requests, used to limit abuse (for example too many sign-in attempts). Our hosting provider also keeps ordinary server logs.</>,

@@ -5,8 +5,8 @@ import { saveEventAction, setEventStatusAction } from "@/app/actions/events";
 import type { FormResult } from "@/app/actions/chefs";
 import { RULES } from "@/lib/bookings/rules";
 import { BOROUGH_LABELS } from "@/lib/format";
-import { BOROUGHS } from "@/lib/queries/event-filters";
 import { Field, FormError, fieldClass } from "./form-ui";
+import { NeighborhoodSelect } from "./neighborhood-select";
 
 export type EventFormVenue = { id: string; neighborhood: string; borough: string; crossStreets: string };
 export type EventFormMenu = { id: string; title: string };
@@ -67,7 +67,7 @@ export function EventForm({ venues, menus, cuisines, values }: { cuisines: { id:
         <Field label="Price per seat ($)" error={f.priceDollars}>
           <input name="priceDollars" type="number" min={0} max={1000} step={1} defaultValue={values.priceDollars} required readOnly={locked} className={fieldClass} />
         </Field>
-        <Field label="Minimum guests" hint="Below this at the cutoff, the dinner is cancelled and guests are emailed." error={f.minGuests}>
+        <Field label="Minimum guests" hint="Below this at the cutoff, the dinner is cancelled and every guest is told." error={f.minGuests}>
           <input name="minGuests" type="number" min={1} max={RULES.MAX_GUESTS} defaultValue={values.minGuests} required readOnly={locked} className={fieldClass} />
         </Field>
         <Field label={`Maximum guests (≤ ${RULES.MAX_GUESTS})`} error={f.maxGuests}>
@@ -107,7 +107,7 @@ export function EventForm({ venues, menus, cuisines, values }: { cuisines: { id:
 
       <section className="rounded-2xl border border-line p-4">
         <p className="text-sm font-medium">Where</p>
-        <p className="mt-1 text-xs text-muted">Guests see the neighborhood and cross streets only. The address goes out by email 48 h before.</p>
+        <p className="mt-1 text-xs text-muted">Guests see the neighborhood and cross streets only. The address goes out by text 48 h before.</p>
         <div className="mt-3">
           <Field label="Venue" error={f.venueId}>
             <select name="venueId" value={venueId} onChange={(e) => setVenueId(e.target.value)} className={fieldClass}>
@@ -125,16 +125,8 @@ export function EventForm({ venues, menus, cuisines, values }: { cuisines: { id:
             <Field label="Street address (private)" error={f.venueAddress}>
               <input name="venueAddress" className={fieldClass} placeholder="12 Orchard St, Apt 3" />
             </Field>
-            <Field label="Neighborhood" error={f.venueNeighborhood}>
-              <input name="venueNeighborhood" className={fieldClass} placeholder="Lower East Side" />
-            </Field>
-            <Field label="Borough" error={f.venueBorough}>
-              <select name="venueBorough" className={fieldClass} defaultValue="">
-                <option value="">Choose</option>
-                {BOROUGHS.map((b) => (
-                  <option key={b} value={b}>{BOROUGH_LABELS[b]}</option>
-                ))}
-              </select>
+            <Field label="Neighborhood" hint="This is what guests see." error={f.venueNeighborhood ?? f.venueBorough}>
+              <NeighborhoodSelect name="venueNeighborhood" anyLabel="Choose a neighborhood" className={fieldClass} />
             </Field>
             <Field label="Nearest cross streets" error={f.venueCrossStreets}>
               <input name="venueCrossStreets" className={fieldClass} placeholder="Orchard St & Rivington St" />
@@ -213,7 +205,7 @@ export function EventStatusButton({ eventId, to, label, variant = "secondary", c
     >
       <input type="hidden" name="eventId" value={eventId} />
       <input type="hidden" name="to" value={to} />
-      {withReason && <input name="reason" placeholder="Reason (emailed to guests)" maxLength={300} className={`${fieldClass} w-56 py-1.5 text-xs`} />}
+      {withReason && <input name="reason" placeholder="Reason (sent to guests)" maxLength={300} className={`${fieldClass} w-56 py-1.5 text-xs`} />}
       <button type="submit" disabled={pending} className={`rounded-full px-3 py-1.5 text-xs font-medium disabled:opacity-50 ${styles}`}>
         {pending ? "…" : label}
       </button>

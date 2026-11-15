@@ -13,7 +13,7 @@ export default function ChefsPage({ searchParams }: PageProps<"/chefs">) {
     <main className="flex-1">
       <Container className="py-12">
         <h1 className="font-display text-4xl">The chefs</h1>
-        <p className="mt-2 text-muted">Every chef is vetted by hand. Line cooks, sous chefs, supper-club hosts and private chefs with a stage of their own.</p>
+        <p className="mt-2 text-muted">Line cooks, sous chefs, supper-club hosts. We meet every one before they host, and each has a table of their own.</p>
         <Suspense fallback={<p className="mt-8 text-sm text-muted">Loading chefs…</p>}>
           <ChefDirectory searchParams={searchParams} />
         </Suspense>

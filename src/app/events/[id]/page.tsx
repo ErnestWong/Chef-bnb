@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -51,9 +52,25 @@ async function EventDetails({ params }: { params: PageProps<"/events/[id]">["par
               {event.status === "COMPLETED" && <Badge>Past dinner</Badge>}
             </div>
             <h1 className="font-display mt-3 text-4xl leading-tight sm:text-5xl">{event.title}</h1>
-            <p className="mt-3 text-lg">
-              {formatEventDay(event.startsAt)} at {formatEventTime(event.startsAt)} · {formatDuration(event.durationMin)}
+            <p className="mt-3 font-mono text-base">
+              {formatEventDay(event.startsAt)} · {formatEventTime(event.startsAt)} · {formatDuration(event.durationMin)}
             </p>
+            {event.photoUrls.length > 0 && (
+              <div className={`mt-6 grid gap-2 ${event.photoUrls.length > 1 ? "grid-cols-[2fr_1fr]" : "grid-cols-1"}`}>
+                <div className="relative aspect-[3/2] overflow-hidden rounded-2xl bg-paper-2">
+                  <Image src={event.photoUrls[0]} alt="" fill sizes="(min-width: 1024px) 560px, 100vw" className="object-cover" priority />
+                </div>
+                {event.photoUrls.length > 1 && (
+                  <div className="grid gap-2">
+                    {event.photoUrls.slice(1, 3).map((url) => (
+                      <div key={url} className="relative aspect-[3/2] overflow-hidden rounded-2xl bg-paper-2">
+                        <Image src={url} alt="" fill sizes="280px" className="object-cover" />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
             {event.description && <p className="mt-6 max-w-prose text-base leading-relaxed">{event.description}</p>}
 
             <section className="mt-10">
@@ -86,7 +103,7 @@ async function EventDetails({ params }: { params: PageProps<"/events/[id]">["par
                     <span className="font-medium">BYOB.</span> {event.byobNote ?? "Bring whatever you'd like to drink; nothing is sold or included."}
                   </li>
                   <li>
-                    <span className="font-medium">Table of {event.maxGuests} at most.</span> The dinner runs if at least {event.minGuests} confirm by {RULES.GO_NO_GO_HOURS} hours before; otherwise it&apos;s cancelled and everyone is emailed.
+                    <span className="font-medium">Table of {event.maxGuests} at most.</span> The dinner runs if at least {event.minGuests} confirm by {RULES.GO_NO_GO_HOURS} hours before; otherwise it&apos;s cancelled and everyone is told.
                   </li>
                   {event.dietaryNotes && (
                     <li>
@@ -154,7 +171,7 @@ async function EventDetails({ params }: { params: PageProps<"/events/[id]">["par
               </ul>
             )}
             {!past && !soldOut && (
-              <ButtonLink href={`/events/${event.id}/book`}>Request seats</ButtonLink>
+              <ButtonLink href={`/events/${event.id}/book`}>Save my seat</ButtonLink>
             )}
             <p className="text-xs text-muted">
               You pay the chef directly; a seat is confirmed once they mark it paid. Unpaid requests expire after {RULES.REQUEST_EXPIRY_HOURS} hours.
@@ -182,7 +199,7 @@ async function EventDetails({ params }: { params: PageProps<"/events/[id]">["par
               </p>
               <p className="text-xs text-muted">{pluralize(event.seatsLeft, "seat")} left</p>
             </div>
-            <ButtonLink href={`/events/${event.id}/book`}>Request seats</ButtonLink>
+            <ButtonLink href={`/events/${event.id}/book`}>Save my seat</ButtonLink>
           </div>
         </div>
       )}

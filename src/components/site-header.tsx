@@ -9,7 +9,7 @@ export function SiteHeader() {
   return (
     <header className="border-b border-line">
       <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-3 sm:px-6 sm:py-4">
-        <Link href="/" className="font-display whitespace-nowrap text-xl font-semibold">
+        <Link href="/" className="font-display whitespace-nowrap text-2xl lowercase tracking-tight">
           Covers
         </Link>
         <nav className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm sm:gap-5">

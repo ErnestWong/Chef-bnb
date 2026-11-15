@@ -3,6 +3,10 @@ import { securityHeaders } from "./src/lib/security/headers";
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  images: {
+    // Seeded demo photos come from Unsplash; real uploads will add the Vercel Blob host.
+    remotePatterns: [{ protocol: "https", hostname: "images.unsplash.com" }, { protocol: "https", hostname: "*.public.blob.vercel-storage.com" }],
+  },
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders({ nodeEnv: process.env.NODE_ENV, vercelEnv: process.env.VERCEL_ENV }) }];
   },

@@ -16,8 +16,8 @@ export default function EventsPage({ searchParams }: PageProps<"/events">) {
   return (
     <main className="flex-1">
       <Container className="py-12">
-        <h1 className="font-display text-4xl">Upcoming dinners</h1>
-        <p className="mt-2 text-muted">Dated, ticketed, ten seats at most. Filter by when, where and what.</p>
+        <h1 className="font-display text-4xl sm:text-5xl">Pull up a chair.</h1>
+        <p className="mt-2 text-muted">Dated, ticketed, ten seats at most. Pick a night, a neighborhood, a kind of food.</p>
         <Suspense fallback={<p className="mt-8 text-sm text-muted">Loading dinners…</p>}>
           <EventsBrowser searchParams={searchParams} />
         </Suspense>
@@ -48,10 +48,11 @@ async function EventsBrowser({ searchParams }: { searchParams: PageProps<"/event
     <div className="mt-8 flex flex-col gap-6">
       <EventFiltersForm filters={filters} cuisines={cuisines} />
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-muted">{pluralize(events.length, "dinner")}</p>
+        <p className="font-mono text-sm text-muted">{pluralize(events.length, "dinner")}</p>
         <div className="flex gap-2">
           {tab("calendar", "Calendar")}
           {tab("list", "List")}
+          <Link href="/events/past" className="rounded-full border border-line px-4 py-1.5 text-sm hover:border-accent">Past</Link>
         </div>
       </div>
       {filters.view === "calendar" ? (

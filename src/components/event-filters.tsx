@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { BOROUGH_LABELS } from "@/lib/format";
-import { BOROUGHS, filterQuery, type EventFilters } from "@/lib/queries/event-filters";
+import { filterQuery, type EventFilters } from "@/lib/queries/event-filters";
+import { NeighborhoodSelect } from "./neighborhood-select";
 
 type Cuisine = { id: string; name: string; slug: string };
 
@@ -9,7 +9,7 @@ const field = "rounded-md border border-line bg-surface px-3 py-2 text-sm";
 /** Plain GET form: server-rendered, works without JavaScript, shareable URLs. */
 export function EventFiltersForm({ filters, cuisines }: { filters: EventFilters; cuisines: Cuisine[] }) {
   const active = Boolean(
-    filters.from || filters.to || filters.borough || filters.cuisine || filters.maxPrice || filters.partySize || filters.soloFriendly,
+    filters.from || filters.to || filters.borough || filters.neighborhood || filters.cuisine || filters.maxPrice || filters.partySize || filters.soloFriendly,
   );
   return (
     <form method="get" action="/events" className="flex flex-col gap-4 rounded-2xl border border-line bg-surface p-5">
@@ -25,15 +25,8 @@ export function EventFiltersForm({ filters, cuisines }: { filters: EventFilters;
           <input type="date" name="to" defaultValue={filters.to?.toISOString().slice(0, 10)} className={field} />
         </label>
         <label className="flex flex-col gap-1 text-xs text-muted">
-          Borough
-          <select name="borough" defaultValue={filters.borough ?? ""} className={field}>
-            <option value="">Anywhere</option>
-            {BOROUGHS.map((b) => (
-              <option key={b} value={b}>
-                {BOROUGH_LABELS[b]}
-              </option>
-            ))}
-          </select>
+          Where
+          <NeighborhoodSelect name="where" defaultValue={filters.neighborhood ?? filters.borough} anyLabel="Anywhere" boroughOptions className={field} />
         </label>
         <label className="flex flex-col gap-1 text-xs text-muted">
           Cuisine
@@ -64,7 +57,7 @@ export function EventFiltersForm({ filters, cuisines }: { filters: EventFilters;
           Filter
         </button>
         {active && (
-          <Link href={`/events${filterQuery({ ...filters, from: undefined, to: undefined, borough: undefined, cuisine: undefined, maxPrice: undefined, partySize: undefined, soloFriendly: false })}`} className="text-sm text-muted underline-offset-2 hover:underline">
+          <Link href={`/events${filterQuery({ ...filters, from: undefined, to: undefined, borough: undefined, neighborhood: undefined, cuisine: undefined, maxPrice: undefined, partySize: undefined, soloFriendly: false })}`} className="text-sm text-muted underline-offset-2 hover:underline">
             Clear
           </Link>
         )}

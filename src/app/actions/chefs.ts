@@ -40,7 +40,6 @@ export async function applyAsChefAction(_prev: FormResult | null, formData: Form
     needsServers: formData.get("needsServers") === "on",
     paymentHandle: formData.get("paymentHandle"),
     paymentNote: formData.get("paymentNote") || undefined,
-    foodCertNumber: formData.get("foodCertNumber") || undefined,
   });
   if (!parsed.success) return { ok: false, fields: fieldErrors(parsed.error.issues) };
   if (!user.email && !parsed.data.email) return { ok: false, fields: { email: "Chefs need an email address." } };

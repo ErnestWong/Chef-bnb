@@ -39,12 +39,31 @@ describe("parseEventFilters", () => {
   });
 });
 
+describe("where: borough or neighborhood", () => {
+  it("takes a borough code", () => {
+    const f = parseEventFilters({ where: "BROOKLYN" }, now);
+    expect(f.borough).toBe("BROOKLYN");
+    expect(f.neighborhood).toBeUndefined();
+  });
+  it("takes a listed neighborhood and implies its borough", () => {
+    const f = parseEventFilters({ where: "lower east side" }, now);
+    expect(f.neighborhood).toBe("Lower East Side");
+    expect(f.borough).toBe("MANHATTAN");
+    expect(filterQuery(f)).toBe("?where=Lower+East+Side");
+  });
+  it("ignores an unknown place", () => {
+    const f = parseEventFilters({ where: "Narnia" }, now);
+    expect(f.neighborhood).toBeUndefined();
+    expect(f.borough).toBeUndefined();
+  });
+});
+
 describe("filterQuery", () => {
   it("round-trips and applies overrides", () => {
     const f = parseEventFilters({ borough: "QUEENS", solo: "1" }, now);
-    expect(filterQuery(f)).toBe("?borough=QUEENS&solo=1");
-    expect(filterQuery(f, { borough: undefined, month: "2026-12" })).toBe("?solo=1&month=2026-12");
-    expect(filterQuery({ ...f, view: "list" }, { borough: undefined })).toBe("?solo=1&view=list");
+    expect(filterQuery(f)).toBe("?where=QUEENS&solo=1");
+    expect(filterQuery(f, { where: undefined, month: "2026-12" })).toBe("?solo=1&month=2026-12");
+    expect(filterQuery({ ...f, view: "list" }, { where: undefined })).toBe("?solo=1&view=list");
   });
 
   it("is empty with no filters", () => {

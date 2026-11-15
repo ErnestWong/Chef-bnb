@@ -17,6 +17,11 @@ export const HOUSE_RULES = [
     body: `Every dinner seats at most ${RULES.MAX_GUESTS} guests. Solo seats, groups of up to ${RULES.GROUP_CAP}, or a buyout of the whole table.`,
   },
   {
+    id: "together",
+    title: "Friends who book together sit together",
+    body: "A group booking is seated as one. The rest of the table is other guests: solo bookers and other groups.",
+  },
+  {
     id: "pay-the-chef",
     title: "You pay the chef directly",
     body: `Nothing is charged on the site. The chef confirms your seat once you've paid them; unpaid requests expire after ${RULES.REQUEST_EXPIRY_HOURS} hours.`,
