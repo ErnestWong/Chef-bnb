@@ -21,7 +21,7 @@ export default function Home() {
               A small dinner party in a chef&apos;s home: come alone or with a few friends, eat what a real chef cooks, and meet the rest of the table.
             </p>
             <div className="mt-10 flex flex-wrap gap-3">
-              <ButtonLink href="/events">See the calendar</ButtonLink>
+              <ButtonLink href="/events">See the events</ButtonLink>
               <ButtonLink href="/chefs" variant="secondary">
                 Meet the chefs
               </ButtonLink>
@@ -87,7 +87,7 @@ async function UpcomingEvents() {
     return <EmptyState title="Nothing on the calendar yet">The first chefs are setting their dates. Check back in a week.</EmptyState>;
   }
   return (
-    <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid gap-4 md:grid-cols-2">
       {events.map((e) => (
         <EventCard key={e.id} event={e} />
       ))}
@@ -97,7 +97,7 @@ async function UpcomingEvents() {
 
 function EventGridSkeleton() {
   return (
-    <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3" aria-hidden>
+    <div className="grid gap-4 md:grid-cols-2" aria-hidden>
       {Array.from({ length: 3 }).map((_, i) => (
         <div key={i} className="h-48 animate-pulse rounded-2xl border border-line bg-surface" />
       ))}
