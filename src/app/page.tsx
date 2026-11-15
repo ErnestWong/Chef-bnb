@@ -15,10 +15,10 @@ export default function Home() {
           <div>
             <p className="mb-5 font-mono text-xs uppercase tracking-[0.25em] text-accent">New York City</p>
             <h1 className="font-display max-w-2xl text-5xl leading-[1.02] sm:text-6xl lg:text-7xl">
-              Dinner party, without the hosting.
+              Someone&apos;s cooking tonight. Your seat&apos;s covered.
             </h1>
             <p className="mt-6 max-w-xl text-lg text-muted">
-              A chef cooks at home for ten people at most. Book a seat and meet the table, bring your people, or take the whole thing. Bring a bottle.
+              Dinner party, without the hosting. A chef cooks at home for ten people at most; book a seat and meet the table, bring your people, or take the whole thing. Bring a bottle.
             </p>
             <div className="mt-10 flex flex-wrap gap-3">
               <ButtonLink href="/events">See the calendar</ButtonLink>
