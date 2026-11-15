@@ -14,10 +14,6 @@ loadEnv({ path: [".env.local", ".env"], quiet: true });
 import type { BookingStatus, BookingType, Borough } from "../src/generated/prisma/enums";
 import { RULES } from "../src/lib/bookings/rules";
 
-if (process.env.VERCEL_ENV === "production" && process.env.SEED_ALLOW_PRODUCTION !== "yes") {
-  throw new Error("Refusing to seed the production database. Set SEED_ALLOW_PRODUCTION=yes to override.");
-}
-
 // Set by seedDemo(); the CLI entry point at the bottom creates its own client.
 let db: Db;
 
@@ -560,6 +556,10 @@ export async function seedDemo(client: Db): Promise<string> {
 
 // `pnpm db:seed` (tsx prisma/seed.ts): run against the configured database and exit.
 if (process.argv[1] && /prisma[\/]seed(\.ts)?$/.test(process.argv[1])) {
+  // The route guards itself with DEMO_SEED; the CLI needs an explicit override for production.
+  if (process.env.VERCEL_ENV === "production" && process.env.SEED_ALLOW_PRODUCTION !== "yes") {
+    throw new Error("Refusing to seed the production database. Set SEED_ALLOW_PRODUCTION=yes to override.");
+  }
   const client = createPrismaClient();
   seedDemo(client)
     .then((summary) => console.log(summary))
