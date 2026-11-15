@@ -42,6 +42,8 @@ type ChefSeed = {
   email: string;
   name: string;
   slug: string;
+  /** [header, portrait]: the chef's header image and a small photo. Stock until they upload. */
+  photos: [string, string];
   bio: string;
   credentials: string;
   instagram: string;
@@ -60,6 +62,7 @@ const chefs: ChefSeed[] = [
     email: "casa.wong@example.test",
     name: "Casa Wong",
     slug: "casa-wong",
+    photos: [`https://images.unsplash.com/photo-1530062845289-9109b2c9c868?w=1800&q=70`, `https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=600&q=70`],
     bio: "Cantonese home cooking the way it tastes in the family kitchen: soy-braised everything, a proper wok hei, and too much food. Ten seats around the big round table, lazy Susan included.",
     credentials: "Ten years of Sunday family dinners; two years of a monthly supper club",
     instagram: "casawongnyc",
@@ -85,6 +88,7 @@ const chefs: ChefSeed[] = [
     email: "maya.r@example.test",
     name: "Maya Rosen",
     slug: "maya-rosen",
+    photos: [`https://images.unsplash.com/photo-1466637574441-749b8f19452f?w=1800&q=70`, `https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=600&q=70`],
     bio: "Sous chef by night, supper club host on Sundays. Seasonal bistro plates built around whatever the Union Square greenmarket had that morning, served in a railroad apartment with one long table.",
     credentials: "ICE graduate; sous chef, West Village bistro",
     instagram: "mayarosencooks",
@@ -109,6 +113,7 @@ const chefs: ChefSeed[] = [
     email: "tomas.v@example.test",
     name: "Tomás Villanueva",
     slug: "tomas-villanueva",
+    photos: [`https://images.unsplash.com/photo-1507048331197-7d4ac70811cf?w=1800&q=70`, `https://images.unsplash.com/photo-1600565193348-f74bd3c7ccdf?w=600&q=70`],
     bio: "Oaxacan moles, fresh masa, and mezcal pairings you bring yourself. Eight seats around one long table in a Bushwick loft; the tortillas come off the comal while you watch.",
     credentials: "Line cook, 6 years, two Brooklyn kitchens",
     instagram: "tomascocina",
@@ -133,6 +138,7 @@ const chefs: ChefSeed[] = [
     email: "hana.k@example.test",
     name: "Hana Kim",
     slug: "hana-kim",
+    photos: [`https://images.unsplash.com/photo-1498654896293-37aacf113fd9?w=1800&q=70`, `https://images.unsplash.com/photo-1605522561233-768ad7a8fabf?w=600&q=70`],
     bio: "Korean banchan spreads and slow braises. Small groups, long dinners, lots of side dishes. Expect twelve little plates before the main course even shows up.",
     credentials: "Private chef; culinary school in Seoul",
     instagram: "hanakimtable",
@@ -157,6 +163,7 @@ const chefs: ChefSeed[] = [
     email: "luca.b@example.test",
     name: "Luca Bianchi",
     slug: "luca-bianchi",
+    photos: [`https://images.unsplash.com/photo-1551632436-cbf8dd35adfa?w=1800&q=70`, `https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=600&q=70`],
     bio: "Handmade pasta, Roman classics, nothing fussy. Bring a bottle of something red. Six to eight people, a walk-up on Orchard Street, and a sheet of pasta rolled by hand before you arrive.",
     credentials: "Pasta station, Midtown trattoria, four years",
     instagram: "lucafapasta",
@@ -314,6 +321,7 @@ async function main() {
       data: {
         userId: user.id,
         displayName: c.name,
+        photoUrls: c.photos,
         slug: c.slug,
         bio: c.bio,
         credentials: c.credentials,

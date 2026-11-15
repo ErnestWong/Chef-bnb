@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -30,14 +31,31 @@ async function ChefProfile({ params }: { params: PageProps<"/chefs/[slug]">["par
 
   return (
     <Container className="py-12">
-      <p className="text-sm text-muted">
+      <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted">
         <Link href="/chefs" className="hover:text-accent">Chefs</Link> / {chef.displayName}
       </p>
-      <header className="mt-4 flex flex-col gap-6 sm:flex-row sm:items-start">
-        <Monogram name={chef.displayName} size="lg" />
+      {chef.photoUrls[0] && (
+        <div className="relative mt-4 aspect-[21/9] overflow-hidden rounded-2xl bg-paper-2 sm:aspect-[3/1]">
+          <Image src={chef.photoUrls[0]} alt="" fill priority sizes="(min-width: 1152px) 1104px, 100vw" className="object-cover" />
+          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-6 pb-5 pt-16 text-white sm:px-8">
+            <p className="font-display text-4xl italic sm:text-6xl">{chef.displayName}</p>
+            <p className="mt-1 font-mono text-xs uppercase tracking-[0.2em] text-white/80">
+              {chef.homeBorough ? BOROUGH_LABELS[chef.homeBorough] : "New York City"}
+            </p>
+          </div>
+        </div>
+      )}
+      <header className="mt-6 flex flex-col gap-6 sm:flex-row sm:items-start">
+        {chef.photoUrls[1] ? (
+          <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-full bg-paper-2">
+            <Image src={chef.photoUrls[1]} alt="" fill sizes="96px" className="object-cover" />
+          </div>
+        ) : (
+          <Monogram name={chef.displayName} size="lg" />
+        )}
         <div className="flex-1">
-          <h1 className="font-display text-4xl sm:text-5xl">{chef.displayName}</h1>
-          <p className="mt-2 text-muted">
+          <h1 className={`font-display text-4xl sm:text-5xl ${chef.photoUrls[0] ? "sr-only" : ""}`}>{chef.displayName}</h1>
+          <p className="font-mono text-sm text-muted">
             {chef.homeBorough ? BOROUGH_LABELS[chef.homeBorough] : "New York City"} · {pluralize(chef.dinnersHosted, "dinner")} hosted
           </p>
           <div className="mt-2">

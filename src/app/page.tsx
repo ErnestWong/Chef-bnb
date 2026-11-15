@@ -1,6 +1,9 @@
 import { connection } from "next/server";
 import { Suspense } from "react";
+import Image from "next/image";
 import { EventCard } from "@/components/event-card";
+import { MoodStrip } from "@/components/mood-strip";
+import { BRAND_PHOTOS } from "@/lib/brand-photos";
 import { ButtonLink, Container, EmptyState } from "@/components/ui";
 import { listPublishedEvents, parseEventFilters } from "@/lib/queries/events";
 
@@ -8,19 +11,25 @@ export default function Home() {
   return (
     <main className="flex-1">
       <section className="border-b border-line">
-        <Container className="py-20 text-center sm:py-28">
-          <p className="mb-5 font-mono text-xs uppercase tracking-[0.25em] text-accent">New York City</p>
-          <h1 className="font-display mx-auto max-w-3xl text-5xl leading-[1.02] sm:text-7xl">
-            Dinner party, without the hosting.
-          </h1>
-          <p className="mx-auto mt-6 max-w-xl text-lg text-muted">
-            A chef cooks at home for ten people at most. Book a seat and meet the table, bring your people, or take the whole thing. Bring a bottle.
-          </p>
-          <div className="mt-10 flex flex-wrap justify-center gap-3">
-            <ButtonLink href="/events">See the calendar</ButtonLink>
-            <ButtonLink href="/chefs" variant="secondary">
-              Meet the chefs
-            </ButtonLink>
+        <Container className="grid items-center gap-10 py-14 sm:py-20 lg:grid-cols-[1.1fr_1fr] lg:py-24">
+          <div>
+            <p className="mb-5 font-mono text-xs uppercase tracking-[0.25em] text-accent">New York City</p>
+            <h1 className="font-display max-w-2xl text-5xl leading-[1.02] sm:text-6xl lg:text-7xl">
+              Dinner party, without the hosting.
+            </h1>
+            <p className="mt-6 max-w-xl text-lg text-muted">
+              A chef cooks at home for ten people at most. Book a seat and meet the table, bring your people, or take the whole thing. Bring a bottle.
+            </p>
+            <div className="mt-10 flex flex-wrap gap-3">
+              <ButtonLink href="/events">See the calendar</ButtonLink>
+              <ButtonLink href="/chefs" variant="secondary">
+                Meet the chefs
+              </ButtonLink>
+            </div>
+            <p className="mt-8 font-mono text-xs uppercase tracking-wide text-muted">Ten seats · one chef · bring a bottle</p>
+          </div>
+          <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-paper-2 sm:aspect-[3/2] lg:aspect-[4/5]">
+            <Image src={BRAND_PHOTOS.hero.src} alt={BRAND_PHOTOS.hero.alt} fill priority sizes="(min-width: 1024px) 520px, 100vw" className="object-cover" />
           </div>
         </Container>
       </section>
@@ -38,6 +47,8 @@ export default function Home() {
           </Suspense>
         </Container>
       </section>
+
+      <MoodStrip />
 
       <section className="border-t border-line">
         <Container className="grid gap-10 py-16 sm:grid-cols-3">
