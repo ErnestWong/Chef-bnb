@@ -8,7 +8,7 @@
  * Wipes and recreates all app data. Refuses to run against Vercel production.
  */
 import { config as loadEnv } from "dotenv";
-import { createPrismaClient } from "../src/lib/db";
+import { createPrismaClient, type Db } from "../src/lib/db";
 
 loadEnv({ path: [".env.local", ".env"], quiet: true });
 import type { BookingStatus, BookingType, Borough } from "../src/generated/prisma/enums";
@@ -18,7 +18,8 @@ if (process.env.VERCEL_ENV === "production" && process.env.SEED_ALLOW_PRODUCTION
   throw new Error("Refusing to seed the production database. Set SEED_ALLOW_PRODUCTION=yes to override.");
 }
 
-const db = createPrismaClient();
+// Set by seedDemo(); the CLI entry point at the bottom creates its own client.
+let db: Db;
 
 const HOUR = 3600 * 1000;
 const DAY = 24 * HOUR;
@@ -292,7 +293,7 @@ async function reset() {
   await db.user.deleteMany({ where: { email: { endsWith: "@example.test" } } });
 }
 
-async function main() {
+async function main(): Promise<string> {
   await reset();
 
   const adminEmails = (process.env.ADMIN_EMAILS ?? "")
@@ -548,14 +549,23 @@ async function main() {
     }
   }
 
-  console.log(
-    `Seeded ${chefs.length} chefs (+3 applicants), ${guests.length} guests, ${events.length} events, ${bookingsCreated} bookings, ${reviewsCreated} reviews.`,
-  );
+  return `Seeded ${chefs.length} chefs (+3 applicants), ${guests.length} guests, ${events.length} events, ${bookingsCreated} bookings, ${reviewsCreated} reviews.`;
 }
 
-main()
-  .catch((err) => {
-    console.error(err);
-    process.exitCode = 1;
-  })
-  .finally(() => db.$disconnect());
+/** Wipe the demo data and load it again. Also reachable from /api/admin/seed when DEMO_SEED=true. */
+export async function seedDemo(client: Db): Promise<string> {
+  db = client;
+  return main();
+}
+
+// `pnpm db:seed` (tsx prisma/seed.ts): run against the configured database and exit.
+if (process.argv[1] && /prisma[\/]seed(\.ts)?$/.test(process.argv[1])) {
+  const client = createPrismaClient();
+  seedDemo(client)
+    .then((summary) => console.log(summary))
+    .catch((err) => {
+      console.error(err);
+      process.exitCode = 1;
+    })
+    .finally(() => client.$disconnect());
+}
