@@ -77,8 +77,8 @@ export function parseEventFilters(raw: RawParams, now = new Date()): EventFilter
     maxPriceCents: data.maxPrice ? data.maxPrice * 100 : undefined,
     partySize: data.partySize,
     soloFriendly: data.solo === "1",
-    // Calendar is the default: a dinner calendar is the product. ?view=list is the other way.
-    view: data.view ?? "calendar",
+    // List is the default (Ernest, 2026-11-15); the calendar is ?view=calendar.
+    view: data.view ?? "list",
     month,
     defaultMonth,
   };
@@ -105,7 +105,7 @@ export function filterQuery(filters: EventFilters, overrides: Partial<Record<str
     maxPrice: filters.maxPrice?.toString(),
     partySize: filters.partySize?.toString(),
     solo: filters.soloFriendly ? "1" : undefined,
-    view: filters.view === "list" ? "list" : undefined,
+    view: filters.view === "calendar" ? "calendar" : undefined,
     month: filters.view === "calendar" && filters.month !== filters.defaultMonth ? filters.month : undefined,
     ...overrides,
   };

@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { ButtonLink, Container } from "@/components/ui";
 import { RULES } from "@/lib/bookings/rules";
+import { BRAND_PHOTOS } from "@/lib/brand-photos";
 
 export const metadata: Metadata = {
   title: "Host a dinner",
@@ -34,17 +36,20 @@ export default function HostPage() {
   return (
     <main className="flex-1">
       <section className="border-b border-line">
-        <Container className="py-20 sm:py-28">
-          <div className="max-w-3xl">
-            <p className="mb-5 text-xs font-medium uppercase tracking-[0.25em] text-accent">For chefs</p>
-            <h1 className="font-display text-5xl leading-[1.05] sm:text-6xl">Cook for a table of ten.</h1>
+        <Container className="grid items-center gap-10 py-14 sm:py-20 lg:grid-cols-[1.1fr_1fr] lg:py-24">
+          <div>
+            <p className="mb-5 font-mono text-xs uppercase tracking-[0.25em] text-accent">For chefs</p>
+            <h1 className="font-display text-5xl leading-[1.02] sm:text-6xl lg:text-7xl">Cook for a table of ten.</h1>
             <p className="mt-6 max-w-xl text-lg text-muted">
-              Host ticketed dinner parties at home. We bring the guests and handle the bookings; you bring the food and keep the money.
+              Your menu, your price, your kitchen. We fill the seats and handle the bookings; you cook and keep the money.
             </p>
             <div className="mt-10 flex flex-wrap items-center gap-4">
               <ButtonLink href="/chef/apply">Start your application</ButtonLink>
-              <span className="text-sm text-muted">About three minutes. No photos needed yet.</span>
+              <span className="font-mono text-xs uppercase tracking-wide text-muted">About three minutes</span>
             </div>
+          </div>
+          <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-paper-2 sm:aspect-[3/2] lg:aspect-[4/5]">
+            <Image src={BRAND_PHOTOS.host.src} alt={BRAND_PHOTOS.host.alt} fill priority sizes="(min-width: 1024px) 520px, 100vw" className="object-cover" />
           </div>
         </Container>
       </section>

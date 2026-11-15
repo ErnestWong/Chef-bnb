@@ -13,7 +13,7 @@ export function EventFiltersForm({ filters, cuisines }: { filters: EventFilters;
   );
   return (
     <form method="get" action="/events" className="flex flex-col gap-4 rounded-2xl border border-line bg-surface p-5">
-      {filters.view === "list" && <input type="hidden" name="view" value="list" />}
+      {filters.view === "calendar" && <input type="hidden" name="view" value="calendar" />}
       {filters.view === "calendar" && filters.month !== filters.defaultMonth && <input type="hidden" name="month" value={filters.month} />}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <label className="flex flex-col gap-1 text-xs text-muted">

@@ -36,7 +36,7 @@ async function EventsBrowser({ searchParams }: { searchParams: PageProps<"/event
 
   const tab = (view: "list" | "calendar", label: string) => (
     <Link
-      href={`/events${filterQuery({ ...filters, view }, view === "list" ? { month: undefined } : {})}`}
+      href={`/events${filterQuery({ ...filters, view }, view === "list" ? { view: undefined, month: undefined } : {})}`}
       aria-current={filters.view === view ? "page" : undefined}
       className={`rounded-full px-4 py-1.5 text-sm ${filters.view === view ? "bg-foreground text-background" : "border border-line hover:border-accent"}`}
     >
@@ -50,8 +50,8 @@ async function EventsBrowser({ searchParams }: { searchParams: PageProps<"/event
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="font-mono text-sm text-muted">{pluralize(events.length, "dinner")}</p>
         <div className="flex gap-2">
-          {tab("calendar", "Calendar")}
           {tab("list", "List")}
+          {tab("calendar", "Calendar")}
           <Link href="/events/past" className="rounded-full border border-line px-4 py-1.5 text-sm hover:border-accent">Past</Link>
         </div>
       </div>
@@ -60,7 +60,7 @@ async function EventsBrowser({ searchParams }: { searchParams: PageProps<"/event
       ) : events.length === 0 ? (
         <EmptyState title="Nothing matches those filters">Try widening the dates or clearing a filter.</EmptyState>
       ) : (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2">
           {events.map((e) => (
             <EventCard key={e.id} event={e} />
           ))}
