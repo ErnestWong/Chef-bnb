@@ -18,7 +18,7 @@ export default function Home() {
               Someone&apos;s cooking tonight. Your seat&apos;s covered.
             </h1>
             <p className="mt-6 max-w-xl text-lg text-muted">
-              Dinner party, without the hosting. A chef cooks at home for ten people at most; book a seat and meet the table, bring your people, or take the whole thing. Bring a bottle.
+              A small dinner party in a chef&apos;s home: come alone or with a few friends, eat what a real chef cooks, and meet the rest of the table.
             </p>
             <div className="mt-10 flex flex-wrap gap-3">
               <ButtonLink href="/events">See the calendar</ButtonLink>
