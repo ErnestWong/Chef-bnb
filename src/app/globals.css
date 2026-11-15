@@ -23,7 +23,7 @@
   --color-accent-soft: var(--accent-soft);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --font-display: var(--font-instrument-serif);
+  --font-display: var(--font-newsreader);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -48,7 +48,8 @@ body {
 .font-display {
   font-family: var(--font-display), Georgia, serif;
   font-weight: 400;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.015em;
+  font-variation-settings: "opsz" 72;
 }
 
 /* Metadata is always mono: dates, places, counts, prices. */
