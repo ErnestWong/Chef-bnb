@@ -33,6 +33,10 @@ describe("applySchema", () => {
   it("validates website and instagram but allows them blank", () => {
     expect(applySchema.safeParse({ ...valid, website: "" , instagram: "" }).success).toBe(true);
     expect(applySchema.safeParse({ ...valid, website: "not a url" }).success).toBe(false);
+    expect(applySchema.safeParse({ ...valid, website: "https://casa-wong.com" }).success).toBe(true);
+    for (const website of ["javascript:alert(1)", "data:text/html,<script>alert(1)</script>", "ftp://files.example"]) {
+      expect(applySchema.safeParse({ ...valid, website }).success, website).toBe(false);
+    }
     expect(applySchema.safeParse({ ...valid, instagram: "@casa.wong" }).success).toBe(true);
     expect(applySchema.safeParse({ ...valid, instagram: "has spaces" }).success).toBe(false);
   });

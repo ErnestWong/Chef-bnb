@@ -8,6 +8,15 @@ export const LIMITS = {
   signInPerEmail: { limit: 10, windowSeconds: 60 * 60 },
   /** Login codes sent to one phone number (each costs money and a carrier message). */
   codesPerPhone: { limit: 5, windowSeconds: 60 * 60 },
+  /** Login codes requested from one IP, on top of signInPerIp: every text costs money. */
+  codesPerIp: { limit: 10, windowSeconds: 60 * 60 },
+  /**
+   * Circuit breakers on all login texts together, so an SMS-bombing run spread
+   * over many IPs and numbers has a ceiling on what it costs. Far above real
+   * traffic before launch; raise them with the user base.
+   */
+  codesGlobalPerHour: { limit: 200, windowSeconds: 60 * 60 },
+  codesGlobalPerDay: { limit: 1000, windowSeconds: 24 * 60 * 60 },
   /** Code checks for one phone number: six digits, so guessing must stay expensive. */
   codeChecksPerPhone: { limit: 8, windowSeconds: 15 * 60 },
   /** Seat requests, cancellations and chef booking decisions by one signed-in user. */

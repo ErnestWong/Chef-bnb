@@ -6,8 +6,10 @@ import { authConfig } from "@/auth.config";
 import { getDb } from "@/lib/db";
 import { DEV_PROVIDER_ID, isDevLoginEnabled } from "@/lib/auth/dev-login";
 import { PHONE_PROVIDER_ID } from "@/lib/auth/phone-provider";
-import { normalizeCode, normalizePhone } from "@/lib/auth/phone";
+import { isSignInPhone, normalizeCode, normalizePhone } from "@/lib/auth/phone";
 import { normalizeEmail, parseAdmins, rolesForSignIn } from "@/lib/auth/roles";
+import { LIMITS } from "@/lib/security/limits";
+import { rateLimit } from "@/lib/security/rate-limit";
 import { getVerifier, isPhoneSignInEnabled } from "@/lib/sms/verify";
 
 /** What authorize() hands to the JWT callback. */
@@ -25,6 +27,9 @@ class PhoneSignInDisabled extends CredentialsSignin {
 }
 class WrongCode extends CredentialsSignin {
   code = "wrong_code";
+}
+class TooManyChecks extends CredentialsSignin {
+  code = "rate_limited";
 }
 
 /**
@@ -44,9 +49,12 @@ const phoneProvider = Credentials({
     const parsed = phoneCredentials.safeParse(raw);
     if (!parsed.success || !parsed.data.phone || !parsed.data.code) throw new WrongCode();
     const { phone, code } = parsed.data;
+    if (!isSignInPhone(phone)) throw new WrongCode();
+    const db = getDb();
+    // Every code check counts, whichever way it arrives (the server action or a direct POST to the callback).
+    if (!(await rateLimit(db, `check:phone:${phone}`, LIMITS.codeChecksPerPhone)).ok) throw new TooManyChecks();
     if (!(await getVerifier().check(phone, code))) throw new WrongCode();
 
-    const db = getDb();
     const admins = parseAdmins();
     const existing = await db.user.findUnique({ where: { phone } });
     const roles = rolesForSignIn({ phone, email: existing?.email }, existing?.roles ?? [], admins);
@@ -68,9 +76,10 @@ class DevLoginDisabled extends CredentialsSignin {
 
 /**
  * Placeholder email sign-in: any email, no password. Creates the user on first
- * use and applies ADMIN_EMAILS. On in development and previews only; it is how
- * the seeded chef and admin accounts are reached. Replace with Google or an
- * emailed code when chefs need an email-based sign-in in production.
+ * use and applies ADMIN_EMAILS. On only against a local database (see
+ * isDevLoginEnabled); it is how the seeded chef and admin accounts are reached
+ * in development. Replace with Google or an emailed code when chefs need an
+ * email-based sign-in in production.
  */
 const devProvider = Credentials({
   id: DEV_PROVIDER_ID,
@@ -101,8 +110,8 @@ const devProvider = Credentials({
   },
 });
 
-if (process.env.VERCEL_ENV === "production" && process.env.AUTH_DEV_LOGIN === "true") {
-  console.warn("[auth] AUTH_DEV_LOGIN=true in production: anyone can sign in as any email. Unset it before real users arrive.");
+if (process.env.VERCEL_ENV && process.env.VERCEL_ENV !== "development" && process.env.AUTH_DEV_LOGIN === "true") {
+  console.warn(`[auth] AUTH_DEV_LOGIN=true on ${process.env.VERCEL_ENV}: anyone can sign in as any email, against the shared database. Unset it.`);
 }
 
 /** Roles live in the JWT; re-read them from the database this often so an approval shows up without re-login. */

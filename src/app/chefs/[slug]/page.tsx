@@ -82,7 +82,7 @@ async function ChefProfile({ params }: { params: PageProps<"/chefs/[slug]">["par
             )}
             <p className="mt-3 flex gap-4 text-sm">
               {chef.website && (
-                <a href={chef.website} rel="noopener noreferrer" target="_blank" className="text-accent underline-offset-2 hover:underline">
+                <a href={/^https?:\/\//i.test(chef.website) ? chef.website : undefined} rel="noopener noreferrer nofollow" target="_blank" className="text-accent underline-offset-2 hover:underline">
                   Website
                 </a>
               )}

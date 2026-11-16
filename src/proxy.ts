@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import { NextResponse } from "next/server";
 import { authConfig } from "@/auth.config";
 import { hasRole } from "@/lib/auth/roles";
+import { safeRedirectPath } from "@/lib/security/redirect";
 
 /**
  * Optimistic route protection: decodes the session JWT (no database) and
@@ -10,9 +11,6 @@ import { hasRole } from "@/lib/auth/roles";
  */
 const { auth } = NextAuth(authConfig);
 
-function safeCallback(value: string | null): string {
-  return value && value.startsWith("/") && !value.startsWith("//") ? value : "/account";
-}
 
 export default auth((req) => {
   const { pathname, search, searchParams } = req.nextUrl;
@@ -21,7 +19,7 @@ export default auth((req) => {
   if (pathname === "/signin") {
     // Already signed in: skip the form.
     return session?.user
-      ? NextResponse.redirect(new URL(safeCallback(searchParams.get("callbackUrl")), req.nextUrl))
+      ? NextResponse.redirect(new URL(safeRedirectPath(searchParams.get("callbackUrl"), "/account"), req.nextUrl))
       : NextResponse.next();
   }
 

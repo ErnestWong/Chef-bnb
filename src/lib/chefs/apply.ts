@@ -9,7 +9,8 @@ export const applySchema = z.object({
   displayName: z.string().trim().min(2, "Tell us your name as guests should see it.").max(60),
   bio: z.string().trim().min(40, "A few sentences, at least — guests book the person.").max(1200),
   credentials: z.string().trim().max(300).optional(),
-  website: z.url("Enter a full URL, including https://").optional().or(z.literal("")),
+  // http(s) only: the public profile links to it, so javascript: or data: URLs must never get in.
+  website: z.url({ protocol: /^https?$/, error: "Enter a full URL, including https://" }).optional().or(z.literal("")),
   instagram: z.string().trim().regex(/^@?[A-Za-z0-9._]{1,30}$/, "Just the handle, like @yourname").optional().or(z.literal("")),
   homeBorough: z.enum(BOROUGHS).optional().or(z.literal("")),
   cuisineIds: z.array(z.string().min(1)).min(1, "Pick at least one cuisine.").max(4),
