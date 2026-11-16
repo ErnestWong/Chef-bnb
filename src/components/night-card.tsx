@@ -57,7 +57,7 @@ export function NightCard({ night, href, pitchStatus }: { night: NightCardData; 
         )}
         <div className="mt-auto flex items-center justify-between gap-3 pt-3">
           {pitchStatus && PITCH_LABELS[pitchStatus] ? <Badge tone={PITCH_LABELS[pitchStatus].tone}>{PITCH_LABELS[pitchStatus].text}</Badge> : <span />}
-          {href && <span className="text-sm font-medium text-accent">{pitchStatus === "PENDING" || pitchStatus === "APPROVED" ? "View" : "Pitch this night"} →</span>}
+          {href && <span className="text-sm font-medium text-accent">{pitchStatus && pitchStatus !== "WITHDRAWN" ? "View" : "Pitch this night"} →</span>}
         </div>
       </div>
     </>
