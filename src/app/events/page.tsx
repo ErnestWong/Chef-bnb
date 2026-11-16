@@ -17,7 +17,7 @@ export default function EventsPage({ searchParams }: PageProps<"/events">) {
     <main className="flex-1">
       <Container className="py-12">
         <h1 className="font-display text-4xl sm:text-5xl">Pull up a chair.</h1>
-        <p className="mt-2 text-muted">Dated, ticketed, ten seats at most. Pick a night, a neighborhood, a kind of food.</p>
+        <p className="mt-2 text-muted">Dated, ticketed, one table at a time. At a chef&apos;s place or in a room we&apos;ve booked. Pick a night, a neighborhood, a kind of food.</p>
         <Suspense fallback={<p className="mt-8 text-sm text-muted">Loading dinners…</p>}>
           <EventsBrowser searchParams={searchParams} />
         </Suspense>

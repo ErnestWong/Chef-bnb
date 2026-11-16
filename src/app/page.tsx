@@ -18,7 +18,7 @@ export default function Home() {
               Someone&apos;s cooking tonight. Your seat&apos;s covered.
             </h1>
             <p className="mt-6 max-w-xl text-lg text-muted">
-              A small dinner party in a chef&apos;s home: come alone or with a few friends, eat what a real chef cooks, and meet the rest of the table.
+              A chef&apos;s dinner party at one long table: come alone or with a few friends, eat what a real chef cooks, and meet the rest of the table.
             </p>
             <div className="mt-10 flex flex-wrap gap-3">
               <ButtonLink href="/events">See the events</ButtonLink>
@@ -26,7 +26,7 @@ export default function Home() {
                 Meet the chefs
               </ButtonLink>
             </div>
-            <p className="mt-8 font-mono text-xs uppercase tracking-wide text-muted">Ten seats · one chef · bring a bottle</p>
+            <p className="mt-8 font-mono text-xs uppercase tracking-wide text-muted">One table · one chef · everyone at it</p>
           </div>
           <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-paper-2 sm:aspect-[3/2] lg:aspect-[4/5]">
             <Image src={BRAND_PHOTOS.hero.src} alt={BRAND_PHOTOS.hero.alt} fill priority sizes="(min-width: 1024px) 520px, 100vw" className="object-cover" />
@@ -53,9 +53,9 @@ export default function Home() {
       <section className="border-t border-line">
         <Container className="grid gap-10 py-16 sm:grid-cols-3">
           {[
-            ["Pick a night", "A date, a menu, a price per seat, a neighborhood. Ten seats at most, so the table talks to itself."],
+            ["Pick a night", "A date, a menu, a price per seat, a neighborhood. One table and one seating, so the table talks to itself."],
             ["Book your way", "Come alone and leave with new numbers, bring two to five friends and sit together, or take the whole table."],
-            ["Bring a bottle", "BYOB, because chefs can't sell drinks at home. The address comes by text 48 hours before, once you're confirmed."],
+            ["Home or room", "Some nights are at a chef's place: ten seats, bring a bottle. Others are in a room we've booked, like a restaurant on its night off. The address comes by text 48 hours before."],
           ].map(([title, body]) => (
             <div key={title}>
               <h3 className="font-display text-2xl">{title}</h3>
@@ -69,8 +69,8 @@ export default function Home() {
         <Container className="flex flex-wrap items-center justify-between gap-6 py-14">
           <div className="max-w-xl">
             <p className="mb-3 font-mono text-xs uppercase tracking-[0.25em] text-accent">For chefs</p>
-            <h2 className="font-display text-3xl">Cook for a table of ten.</h2>
-            <p className="mt-2 text-muted">Your menu, your price, your kitchen. We fill the seats and guests pay you directly. Applying takes three minutes.</p>
+            <h2 className="font-display text-3xl">Cook for a full table.</h2>
+            <p className="mt-2 text-muted">Your menu, your price. Cook at your place, in your own space, or on a night we&apos;ve booked a room for. We fill the seats and guests pay you directly.</p>
           </div>
           <ButtonLink href="/host" variant="secondary">How hosting works</ButtonLink>
         </Container>

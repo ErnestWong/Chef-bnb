@@ -7,6 +7,7 @@ import { requireRole } from "@/lib/auth/session";
 import { getDb } from "@/lib/db";
 import { RULES } from "@/lib/bookings/rules";
 import { listCuisines } from "@/lib/queries/events";
+import { CHEF_VENUE_SELECT } from "@/lib/queries/bookings";
 
 export const metadata: Metadata = { title: "New dinner" };
 
@@ -28,7 +29,7 @@ async function NewEventForm() {
   const user = await requireRole("CHEF", "/chef/events/new");
   const db = getDb();
   const [venues, menus, cuisines, profile] = await Promise.all([
-    db.venue.findMany({ where: { ownerUserId: user.id }, select: { id: true, neighborhood: true, borough: true, crossStreets: true }, orderBy: { createdAt: "asc" } }),
+    db.venue.findMany({ where: { ownerUserId: user.id }, select: CHEF_VENUE_SELECT, orderBy: { createdAt: "asc" } }),
     db.menu.findMany({ where: { chef: { userId: user.id } }, select: { id: true, title: true }, orderBy: { createdAt: "desc" } }),
     listCuisines(),
     db.chefProfile.findUnique({ where: { userId: user.id }, select: { cuisines: { select: { id: true } } } }),
@@ -51,12 +52,16 @@ async function NewEventForm() {
           cuisineIds: profile?.cuisines.map((c) => c.id) ?? [],
           allowedBookingTypes: ["SEAT", "GROUP", "BUYOUT"],
           dietaryNotes: "",
+          drinks: "BYOB",
           byobNote: "",
           venueId: venues[0]?.id ?? "",
           menuId: "",
         }}
       />
       <p className="mt-6 text-xs text-muted">Go/no-go is {RULES.GO_NO_GO_HOURS} hours before start: below your minimum, the dinner cancels itself and guests are emailed. Unpaid requests expire after {RULES.REQUEST_EXPIRY_HOURS} hours.</p>
+      <p className="mt-2 text-xs text-muted">
+        No room of your own? <Link href="/chef/nights" className="text-accent underline-offset-2 hover:underline">Pitch for one of our open nights</Link>.
+      </p>
     </div>
   );
 }

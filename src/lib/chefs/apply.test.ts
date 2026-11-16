@@ -30,6 +30,12 @@ describe("applySchema", () => {
     expect(applySchema.safeParse({ ...valid, paymentHandle: "" }).success).toBe(false);
   });
 
+  it("asks where the chef will cook: home, their own space, or an open night", () => {
+    for (const hosting of ["HOME", "OWN_SPACE", "OPEN_NIGHTS"]) expect(applySchema.safeParse({ ...valid, hosting }).success).toBe(true);
+    expect(applySchema.safeParse({ ...valid, hosting: "VENUE" }).success).toBe(false);
+    expect(applySchema.safeParse({ ...valid, hosting: undefined }).success).toBe(false);
+  });
+
   it("validates website and instagram but allows them blank", () => {
     expect(applySchema.safeParse({ ...valid, website: "" , instagram: "" }).success).toBe(true);
     expect(applySchema.safeParse({ ...valid, website: "not a url" }).success).toBe(false);

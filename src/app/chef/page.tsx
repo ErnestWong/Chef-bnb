@@ -5,8 +5,10 @@ import { Suspense } from "react";
 import { Badge, ButtonLink, Container, EmptyState } from "@/components/ui";
 import { requireUser } from "@/lib/auth/session";
 import { hasRole } from "@/lib/auth/roles";
+import { FORMAT_LABELS, drinksLabel } from "@/lib/events/formats";
 import { formatEventDateTime, formatEventDay, formatMoney, pluralize } from "@/lib/format";
 import { confirmedSeats, heldSeats, listEventsForChef } from "@/lib/queries/bookings";
+import { listBoardNights, listPitchesForChef } from "@/lib/nights/queries";
 import { getDb } from "@/lib/db";
 
 export const metadata: Metadata = { title: "Chef dashboard" };
@@ -44,7 +46,8 @@ async function ChefHome({ searchParams }: { searchParams: PageProps<"/chef">["se
     return <ApplicationStatus profile={profile} justApplied={false} approvedPendingSession />;
   }
 
-  const events = await listEventsForChef(user);
+  const [events, pitches, board] = await Promise.all([listEventsForChef(user), listPitchesForChef(user.id), listBoardNights(user.id)]);
+  const openToPitch = board.filter((n) => !n.myPitch || n.myPitch.status === "WITHDRAWN").length;
   const now = new Date();
   const upcoming = events.filter((e) => e.startsAt > now);
   const past = events.filter((e) => e.startsAt <= now);
@@ -62,13 +65,15 @@ async function ChefHome({ searchParams }: { searchParams: PageProps<"/chef">["se
         </div>
 
         {events.length === 0 ? (
-          <FirstRun profile={profile} />
+          <FirstRun profile={profile} openNights={openToPitch} />
         ) : (
-          <div>
+          <div className="flex flex-wrap gap-3">
             <Link href="/chef/events/new" className="inline-flex rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-white hover:opacity-90">+ New dinner</Link>
+            <ButtonLink href="/chef/nights" variant="secondary">Open nights{openToPitch > 0 ? ` (${openToPitch})` : ""}</ButtonLink>
           </div>
         )}
         <Section title="Upcoming" events={upcoming} empty="No upcoming dinners yet." />
+        {pitches.length > 0 && <Pitches pitches={pitches} />}
         {past.length > 0 && <Section title="Past" events={past} empty="No past dinners yet." />}
       </div>
     </>
@@ -163,12 +168,45 @@ function ApplicationClosed({ profile, status }: { profile: ProfileBits; status: 
   );
 }
 
+const PITCH_TONE = { PENDING: "warn", APPROVED: "accent", DECLINED: "neutral", WITHDRAWN: "neutral" } as const;
+const PITCH_WORDS = { PENDING: "waiting", APPROVED: "approved", DECLINED: "declined", WITHDRAWN: "withdrawn" } as const;
+
+/** Pitches for open nights, newest first: what's waiting and what was decided. */
+function Pitches({ pitches }: { pitches: Awaited<ReturnType<typeof listPitchesForChef>> }) {
+  return (
+    <section>
+      <h2 className="font-display text-2xl">Your pitches</h2>
+      <ul className="mt-3 flex flex-col gap-3">
+        {pitches.map((p) => (
+          <li key={p.id}>
+            <Link href={`/chef/nights/${p.openNight.id}`} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-surface p-4 hover:border-accent">
+              <div>
+                <p className="font-mono text-xs uppercase tracking-wide text-muted">
+                  Open night · {formatEventDateTime(p.openNight.startsAt)} · {p.openNight.venue.neighborhood}
+                </p>
+                <p className="font-display text-xl">{p.title}</p>
+                <p className="text-sm text-muted">{formatMoney(p.priceCents)} / seat · {pluralize(p.maxGuests, "seat")}</p>
+                {p.decisionNote && p.status !== "PENDING" && <p className="mt-1 text-xs text-muted">{p.decisionNote}</p>}
+              </div>
+              <Badge tone={PITCH_TONE[p.status]}>{PITCH_WORDS[p.status]}</Badge>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 /** Approved, no dinners yet: a short checklist instead of two empty sections. */
-function FirstRun({ profile }: { profile: ProfileBits }) {
+function FirstRun({ profile, openNights }: { profile: ProfileBits; openNights: number }) {
   const items = [
     { done: true, title: "Approved to host", body: "Your profile is live." },
     { done: Boolean(profile.paymentHandle), title: "Payment handle", body: profile.paymentHandle ? `Guests pay ${profile.paymentHandle} directly.` : "Add a Venmo or Zelle handle so guests can pay you." },
-    { done: false, title: "Publish your first dinner", body: "Date, menu, price per seat, how many guests. About five minutes." },
+    {
+      done: false,
+      title: "Publish your first dinner",
+      body: `At your place or your own space: date, menu, price per seat, how many guests. About five minutes. No room? ${openNights > 0 ? `Pitch one of ${pluralize(openNights, "open night")} we've booked.` : "Open nights in rooms we've booked show up on the board."}`,
+    },
     { done: false, title: "Share your profile", body: `/chefs/${profile.slug} is yours to send around once a dinner is up.` },
   ];
   return (
@@ -189,6 +227,7 @@ function FirstRun({ profile }: { profile: ProfileBits }) {
       </ol>
       <div className="mt-5 flex flex-wrap gap-3">
         <ButtonLink href="/chef/events/new">Create your first dinner</ButtonLink>
+        <ButtonLink href="/chef/nights" variant="secondary">See open nights</ButtonLink>
         <ButtonLink href={`/chefs/${profile.slug}`} variant="secondary">View your profile</ButtonLink>
       </div>
     </section>
@@ -214,6 +253,9 @@ function Section({ title, events, empty }: { title: string; events: Awaited<Retu
                   <div>
                     <p className="text-sm text-accent">{formatEventDateTime(e.startsAt)}</p>
                     <p className="font-display text-xl">{e.title}</p>
+                    <p className="font-mono text-xs uppercase tracking-wide text-muted">
+                      {FORMAT_LABELS[e.format]} · {e.venue.type === "PARTNER_VENUE" ? `${e.venue.name ?? "open night"} · ` : ""}{e.venue.neighborhood} · {drinksLabel(e.byob)}
+                    </p>
                     <p className="text-sm text-muted">{formatMoney(e.priceCents)} / seat · min {e.minGuests}, max {e.maxGuests}</p>
                   </div>
                   <div className="flex flex-wrap gap-1.5">

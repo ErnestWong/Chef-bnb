@@ -38,4 +38,9 @@ describe("public select lists", () => {
     expect(PUBLIC_EVENT_SELECT.venue.select).toMatchObject({ neighborhood: true, crossStreets: true, lat: true, lng: true });
     expect("address" in PUBLIC_EVENT_SELECT.venue.select).toBe(false);
   });
+
+  it("keeps a room's name and chef-facing notes off public pages; the format and credits are public", () => {
+    for (const key of ["name", "description", "kitchenNotes", "hasBar"]) expect(key in PUBLIC_VENUE_SELECT, key).toBe(false);
+    expect(PUBLIC_EVENT_SELECT).toMatchObject({ format: true, credits: true, byob: true });
+  });
 });

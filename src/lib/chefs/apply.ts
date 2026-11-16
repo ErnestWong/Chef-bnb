@@ -13,7 +13,8 @@ export const applySchema = z.object({
   instagram: z.string().trim().regex(/^@?[A-Za-z0-9._]{1,30}$/, "Just the handle, like @yourname").optional().or(z.literal("")),
   homeBorough: z.enum(BOROUGHS).optional().or(z.literal("")),
   cuisineIds: z.array(z.string().min(1)).min(1, "Pick at least one cuisine.").max(4),
-  hosting: z.enum(["HOME", "VENUE"]),
+  /** "Where will you cook?": at my place, in my own space, or on Covers' open nights. */
+  hosting: z.enum(["HOME", "OWN_SPACE", "OPEN_NIGHTS"], "Pick where you'd cook."),
   needsFoh: z.boolean().default(false),
   needsServers: z.boolean().default(false),
   paymentHandle: z.string().trim().min(2, "Guests pay you directly — add a Venmo or Zelle handle.").max(60),
@@ -21,6 +22,13 @@ export const applySchema = z.object({
 });
 
 export type ApplyInput = z.infer<typeof applySchema>;
+
+/** The three answers to "Where will you cook?", for the form and the admin queue. */
+export const HOSTING_PATH_LABELS = {
+  HOME: "At my place",
+  OWN_SPACE: "In my own space",
+  OPEN_NIGHTS: "On one of your nights",
+} as const satisfies Record<ApplyInput["hosting"], string>;
 
 export function slugify(name: string): string {
   return (
@@ -95,7 +103,8 @@ export async function createApplication(db: Db, userId: string, input: ApplyInpu
         website: input.website || null,
         instagram: input.instagram ? input.instagram.replace(/^@/, "") : null,
         homeBorough: input.homeBorough || null,
-        needsVenue: input.hosting === "VENUE",
+        hostingPath: input.hosting,
+        needsVenue: input.hosting === "OPEN_NIGHTS",
         needsFoh: input.needsFoh,
         needsServers: input.needsServers,
         paymentHandle: input.paymentHandle,
@@ -122,7 +131,8 @@ export async function createApplication(db: Db, userId: string, input: ApplyInpu
       website: input.website || null,
       instagram: input.instagram ? input.instagram.replace(/^@/, "") : null,
       homeBorough: input.homeBorough || null,
-      needsVenue: input.hosting === "VENUE",
+      hostingPath: input.hosting,
+      needsVenue: input.hosting === "OPEN_NIGHTS",
       needsFoh: input.needsFoh,
       needsServers: input.needsServers,
       paymentHandle: input.paymentHandle,

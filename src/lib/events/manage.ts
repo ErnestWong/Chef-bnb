@@ -3,6 +3,7 @@ import type { Db } from "@/lib/db";
 import type { Prisma } from "@/generated/prisma/client";
 import type { Borough } from "@/generated/prisma/enums";
 import { RULES } from "@/lib/bookings/rules";
+import { checkDinnerShape, dinnerLimits } from "@/lib/events/formats";
 import { APP_TIME_ZONE } from "@/lib/format";
 import { BOROUGHS } from "@/lib/queries/event-filters";
 import { boroughOf, canonicalNeighborhood } from "@/lib/nyc/neighborhoods";
@@ -52,14 +53,21 @@ export const eventSchema = z
     time: z.string().regex(/^\d{2}:\d{2}$/, "Pick a start time."),
     durationMin: z.coerce.number().int().min(30).max(600),
     priceDollars: z.coerce.number().min(0).max(1000),
-    minGuests: z.coerce.number().int().min(1).max(RULES.MAX_GUESTS),
-    maxGuests: z.coerce.number().int().min(1).max(RULES.MAX_GUESTS, `At most ${RULES.MAX_GUESTS} guests per dinner.`),
+    // The real limit depends on the venue (10 at home, the room's capacity elsewhere); saveEvent checks it.
+    minGuests: z.coerce.number().int().min(1).max(RULES.MAX_VENUE_CAPACITY),
+    maxGuests: z.coerce.number().int().min(1).max(RULES.MAX_VENUE_CAPACITY),
     allowedBookingTypes: z.array(z.enum(["SEAT", "GROUP", "BUYOUT"])).min(1, "Allow at least one way to book."),
     cuisineIds: z.array(z.string().min(1)).min(1, "Pick at least one cuisine.").max(4),
     dietaryNotes: z.string().trim().max(500).optional(),
+    /** BYOB, or the venue's licensed bar (rooms with a bar only). */
+    drinks: z.enum(["BYOB", "BAR"]).default("BYOB"),
     byobNote: z.string().trim().max(200).optional(),
-    // Venue: an existing one the chef owns, or a new one.
+    // Venue: an existing one the chef owns, or a new one (their home or their own space).
     venueId: z.string().optional(),
+    venueKind: z.enum(["HOME", "SPACE"]).default("HOME"),
+    venueName: optional(z.string().trim().min(2).max(80)),
+    venueCapacity: z.coerce.number().int().min(1).max(RULES.MAX_VENUE_CAPACITY).optional(),
+    venueHasBar: z.boolean().default(false),
     venueAddress: optional(z.string().trim().min(5).max(200)),
     venueNeighborhood: optional(z.string().trim().min(2).max(60).refine((n) => canonicalNeighborhood(n) !== null, "Pick a neighborhood from the list.")),
     /** Derived from the neighborhood; accepted for older clients. */
@@ -77,6 +85,10 @@ export const eventSchema = z
   .refine((e) => e.venueId || (e.venueAddress && e.venueNeighborhood && e.venueCrossStreets), {
     message: "Pick a venue or fill in a new one (address, neighborhood, cross streets).",
     path: ["venueId"],
+  })
+  .refine((e) => e.venueId || e.venueKind === "HOME" || e.venueCapacity, {
+    message: "How many people does the space seat?",
+    path: ["venueCapacity"],
   });
 
 export type EventInput = z.infer<typeof eventSchema>;
@@ -95,57 +107,93 @@ export function parseCourses(text: string | undefined): { name: string; descript
 }
 
 export class EventError extends Error {
-  constructor(public readonly code: "not_chef" | "venue_not_yours" | "menu_not_yours" | "in_past" | "not_found" | "locked" | "closed") {
+  constructor(
+    public readonly code: "not_chef" | "venue_not_yours" | "menu_not_yours" | "in_past" | "not_found" | "locked" | "closed" | "shape",
+    detail?: string,
+    /** The form field the message belongs to, when there is one. */
+    public readonly field?: string,
+  ) {
     super(
-      {
-        not_chef: "Only approved chefs can create dinners.",
-        venue_not_yours: "That venue isn't yours.",
-        menu_not_yours: "That menu isn't yours.",
-        in_past: "The dinner has to start in the future.",
-        not_found: "Dinner not found.",
-        locked: "This dinner already has bookings; the date, price and capacity can't change.",
-        closed: "Cancelled or completed dinners can't be edited or reopened.",
-      }[code],
+      detail ??
+        {
+          not_chef: "Only approved chefs can create dinners.",
+          venue_not_yours: "That venue isn't yours.",
+          menu_not_yours: "That menu isn't yours.",
+          in_past: "The dinner has to start in the future.",
+          not_found: "Dinner not found.",
+          locked: "This dinner already has bookings; the date, price and capacity can't change.",
+          closed: "Cancelled or completed dinners can't be edited or reopened.",
+          shape: "Check the seats and drinks for this venue.",
+        }[code],
     );
   }
 }
 
-/** Create or update an event for the signed-in chef. Validates ownership, future date, and capacity rules. */
+const VENUE_LIMIT_SELECT = { id: true, borough: true, type: true, capacity: true, hasBar: true } as const;
+
+/**
+ * Create or update an event for the signed-in chef. Validates ownership,
+ * future date, and the venue's rules: a dinner at home seats at most 10 and is
+ * BYOB; a room seats what it holds and may use its own bar. A dinner from an
+ * open night keeps the night's room, date and time whatever the form sends.
+ */
 export async function saveEvent(db: Db, userId: string, input: EventInput, eventId?: string, now = new Date()) {
   const chef = await db.chefProfile.findUnique({ where: { userId }, select: { id: true, status: true } });
   if (!chef || chef.status !== "APPROVED") throw new EventError("not_chef");
 
-  const startsAt = zonedToUtc(input.date, input.time);
-  if (startsAt <= now) throw new EventError("in_past");
-
   return db.$transaction(async (tx) => {
     // Share the booking lock before reading occupancy or changing the event.
     if (eventId) await tx.$queryRaw`SELECT id FROM events WHERE id = ${eventId} FOR UPDATE`;
-    let venueId = input.venueId || null;
-    let borough: Borough;
-    if (venueId) {
-      const venue = await tx.venue.findFirst({ where: { id: venueId, ownerUserId: userId }, select: { id: true, borough: true } });
-      if (!venue) throw new EventError("venue_not_yours");
-      borough = venue.borough;
+    const night = eventId
+      ? (
+          await tx.event.findFirst({
+            where: { id: eventId, chefId: chef.id },
+            select: { openNight: { select: { startsAt: true, durationMin: true, minSeats: true, maxSeats: true, venue: { select: VENUE_LIMIT_SELECT } } } },
+          })
+        )?.openNight ?? null
+      : null;
+
+    const startsAt = night ? night.startsAt : zonedToUtc(input.date, input.time);
+    if (startsAt <= now) throw new EventError("in_past");
+    if (night && input.durationMin > night.durationMin) {
+      throw new EventError("shape", `The venue has the room for ${night.durationMin} minutes.`, "durationMin");
+    }
+
+    let venue: { id: string; borough: Borough; type: "CHEF_HOME" | "CHEF_SPACE" | "PARTNER_VENUE"; capacity: number; hasBar: boolean };
+    if (night) {
+      venue = night.venue;
+    } else if (input.venueId) {
+      const own = await tx.venue.findFirst({ where: { id: input.venueId, ownerUserId: userId }, select: VENUE_LIMIT_SELECT });
+      if (!own) throw new EventError("venue_not_yours");
+      venue = own;
     } else {
       const neighborhood = canonicalNeighborhood(input.venueNeighborhood!)!;
-      borough = boroughOf(neighborhood)!;
+      const borough = boroughOf(neighborhood)!;
       const fallback = BOROUGH_CENTROIDS[borough];
-      const venue = await tx.venue.create({
+      const space = input.venueKind === "SPACE";
+      venue = await tx.venue.create({
         data: {
           ownerUserId: userId,
-          type: "CHEF_HOME",
+          type: space ? "CHEF_SPACE" : "CHEF_HOME",
+          name: space ? input.venueName || null : null,
+          hasBar: space && input.venueHasBar,
           address: input.venueAddress!,
           neighborhood,
           borough,
           crossStreets: input.venueCrossStreets!,
           lat: roundCoord(Number.isFinite(input.venueLat) ? (input.venueLat as number) : fallback.lat),
           lng: roundCoord(Number.isFinite(input.venueLng) ? (input.venueLng as number) : fallback.lng),
-          capacity: RULES.MAX_GUESTS,
+          capacity: space ? input.venueCapacity! : RULES.MAX_HOME_GUESTS,
         },
+        select: VENUE_LIMIT_SELECT,
       });
-      venueId = venue.id;
     }
+
+    const limits = dinnerLimits(venue, night);
+    const problem = checkDinnerShape(limits, { minGuests: input.minGuests, maxGuests: input.maxGuests, drinks: input.drinks });
+    if (problem) throw new EventError("shape", problem.message, problem.field);
+    const venueId = venue.id;
+    const borough = venue.borough;
 
     let menuId: string | null = input.menuId || null;
     if (menuId) {
@@ -173,7 +221,8 @@ export async function saveEvent(db: Db, userId: string, input: EventInput, event
       menuId,
       dietaryNotes: input.dietaryNotes || null,
       byobNote: input.byobNote || null,
-      byob: true,
+      format: limits.format,
+      byob: input.drinks !== "BAR",
       cuisines: { set: input.cuisineIds.map((id) => ({ id })) },
     };
 

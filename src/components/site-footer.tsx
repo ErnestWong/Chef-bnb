@@ -4,7 +4,7 @@ export function SiteFooter() {
   return (
     <footer className="mt-auto border-t border-line">
       <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-8 text-sm text-muted">
-        <p className="font-mono text-xs uppercase tracking-wide">Ten seats · one chef · bring a bottle</p>
+        <p className="font-mono text-xs uppercase tracking-wide">One table · one chef · everyone at it</p>
         <nav className="flex flex-wrap gap-x-5 gap-y-2">
           <Link href="/terms" className="hover:text-accent">
             Terms

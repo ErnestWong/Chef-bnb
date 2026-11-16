@@ -15,7 +15,8 @@ export function chefApplicationDecidedEmail(p: ChefApplicationDecidedProps) {
         <EmailLayout preview="Your chef profile is live; post your first dinner" heading="Welcome aboard" cta={{ label: "Create your first dinner", href: appUrl("/chef/events/new") }}>
           <P>Hi {p.chefName}, your application has been approved. Your profile is live and you can publish dinners from your chef dashboard.</P>
           {p.note && <P>A note from the team: {p.note}</P>}
-          <P>Guests pay you directly with the handle on your profile; mark each booking paid as the money lands. Every dinner is BYOB and seats ten at most.</P>
+          <P>Guests pay you directly with the handle on your profile; mark each booking paid as the money lands. Dinners at home are BYOB and seat ten at most; a room seats what it holds.</P>
+          <P>No room of your own? The open-nights board lists nights we&apos;ve already booked with venues. Pitch a menu for one and we&apos;ll say yes or no.</P>
         </EmailLayout>
       ),
     };

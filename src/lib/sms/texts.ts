@@ -4,6 +4,8 @@ import type { ChefApplicationDecidedProps } from "@/lib/email/templates/chef-app
 import type { EventCancelledProps } from "@/lib/email/templates/event-cancelled";
 import { appUrl } from "@/lib/email/templates/layout";
 import type { MarkAttendanceProps } from "@/lib/email/templates/mark-attendance";
+import type { PitchDecidedProps } from "@/lib/email/templates/pitch-decided";
+import { addressLine } from "@/lib/email/templates/address-reveal";
 import type { RequestExpiredProps } from "@/lib/email/templates/request-expired";
 import type { ReviewRequestProps } from "@/lib/email/templates/review-request";
 import type { SeatRequestedProps } from "@/lib/email/templates/seat-requested";
@@ -26,7 +28,7 @@ export function seatRequestedText(p: SeatRequestedProps) {
 }
 
 export function bookingConfirmedText(p: BookingConfirmedProps) {
-  return sign(`You're in. ${p.chefName} confirmed your ${pluralize(p.partySize, "seat")} for ${p.eventTitle}, ${formatEventDateTime(p.startsAt)}, ${p.neighborhood}. Address arrives ${RULES.ADDRESS_REVEAL_HOURS}h before. BYOB. ${appUrl(`/bookings/${p.bookingId}`)}`);
+  return sign(`You're in. ${p.chefName} confirmed your ${pluralize(p.partySize, "seat")} for ${p.eventTitle}, ${formatEventDateTime(p.startsAt)}, ${p.neighborhood}. Address arrives ${RULES.ADDRESS_REVEAL_HOURS}h before. ${p.byob ? "BYOB." : "Bar open."} ${appUrl(`/bookings/${p.bookingId}`)}`);
 }
 
 export function requestExpiredText(p: RequestExpiredProps) {
@@ -45,8 +47,9 @@ export function eventCancelledText(p: EventCancelledProps) {
 
 /** Carries the exact address: PRIVATE. Only ever sent to a confirmed guest inside the reveal window. */
 export function addressRevealText(p: AddressRevealProps) {
-  const byob = p.byobNote ? ` BYOB: ${p.byobNote}` : " BYOB.";
-  return sign(`${p.eventTitle} with ${p.chefName}, ${formatEventDateTime(p.startsAt)}. Address: ${p.address} (${p.neighborhood}, near ${p.crossStreets}).${byob} ${appUrl(`/bookings/${p.bookingId}`)}`);
+  const label = p.byob ? "BYOB" : "Bar open";
+  const drinks = p.byobNote ? ` ${label}: ${p.byobNote}` : ` ${label}.`;
+  return sign(`${p.eventTitle} with ${p.chefName}, ${formatEventDateTime(p.startsAt)}. Address: ${addressLine(p)}.${drinks} ${appUrl(`/bookings/${p.bookingId}`)}`);
 }
 
 export function reviewRequestText(p: ReviewRequestProps) {
@@ -58,6 +61,13 @@ export function chefApplicationDecidedText(p: ChefApplicationDecidedProps) {
   return p.decision === "APPROVED"
     ? sign(`You're approved to host, ${p.chefName}. Publish your first dinner: ${appUrl("/chef/events/new")}${note}`)
     : sign(`Thanks for applying, ${p.chefName}. We can't approve your application right now.${note} You can apply again from ${appUrl("/chef")}`);
+}
+
+export function pitchDecidedText(p: PitchDecidedProps) {
+  const note = p.note ? ` Note: ${p.note}` : "";
+  return p.decision === "APPROVED" && p.eventId
+    ? sign(`Your pitch for ${p.nightLabel} is approved. ${p.title} is saved as a draft; review and publish it: ${appUrl(`/chef/events/${p.eventId}/edit`)}${note}`)
+    : sign(`We went another way for ${p.nightLabel}.${note} More nights: ${appUrl("/chef/nights")}`);
 }
 
 export function markAttendanceText(p: MarkAttendanceProps) {

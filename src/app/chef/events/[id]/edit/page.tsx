@@ -7,7 +7,8 @@ import { Container } from "@/components/ui";
 import { requireRole } from "@/lib/auth/session";
 import { getDb } from "@/lib/db";
 import { listCuisines } from "@/lib/queries/events";
-import { APP_TIME_ZONE } from "@/lib/format";
+import { APP_TIME_ZONE, formatEventDateTime } from "@/lib/format";
+import { CHEF_VENUE_SELECT } from "@/lib/queries/bookings";
 
 export const metadata: Metadata = { title: "Edit dinner" };
 
@@ -33,11 +34,16 @@ async function EditForm({ params }: { params: PageProps<"/chef/events/[id]/edit"
   const db = getDb();
   const event = await db.event.findFirst({
     where: { id, chef: { userId: user.id } },
-    include: { cuisines: { select: { id: true } }, _count: { select: { bookings: { where: { status: { in: ["REQUESTED", "CONFIRMED"] } } } } } },
+    include: {
+      cuisines: { select: { id: true } },
+      venue: { select: CHEF_VENUE_SELECT },
+      openNight: { select: { startsAt: true, minSeats: true, maxSeats: true, durationMin: true } },
+      _count: { select: { bookings: { where: { status: { in: ["REQUESTED", "CONFIRMED"] } } } } },
+    },
   });
   if (!event) notFound();
   const [venues, menus, cuisines] = await Promise.all([
-    db.venue.findMany({ where: { ownerUserId: user.id }, select: { id: true, neighborhood: true, borough: true, crossStreets: true }, orderBy: { createdAt: "asc" } }),
+    db.venue.findMany({ where: { ownerUserId: user.id }, select: CHEF_VENUE_SELECT, orderBy: { createdAt: "asc" } }),
     db.menu.findMany({ where: { chef: { userId: user.id } }, select: { id: true, title: true }, orderBy: { createdAt: "desc" } }),
     listCuisines(),
   ]);
@@ -52,6 +58,11 @@ async function EditForm({ params }: { params: PageProps<"/chef/events/[id]/edit"
           venues={venues}
           menus={menus}
           cuisines={cuisines}
+          night={
+            event.openNight
+              ? { venue: event.venue, dateLabel: formatEventDateTime(event.openNight.startsAt), minSeats: event.openNight.minSeats, maxSeats: event.openNight.maxSeats, durationMin: event.openNight.durationMin }
+              : null
+          }
           values={{
             id: event.id,
             title: event.title,
@@ -65,6 +76,7 @@ async function EditForm({ params }: { params: PageProps<"/chef/events/[id]/edit"
             cuisineIds: event.cuisines.map((c) => c.id),
             allowedBookingTypes: event.allowedBookingTypes,
             dietaryNotes: event.dietaryNotes ?? "",
+            drinks: event.byob ? "BYOB" : "BAR",
             byobNote: event.byobNote ?? "",
             venueId: event.venueId,
             menuId: event.menuId ?? "",

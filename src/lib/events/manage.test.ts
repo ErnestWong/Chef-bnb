@@ -46,9 +46,21 @@ describe("eventSchema", () => {
     if (r.success) expect(r.data.intent).toBe("draft");
   });
 
-  it("caps max guests at 10 and keeps min <= max", () => {
-    expect(eventSchema.safeParse({ ...valid, maxGuests: "11" }).success).toBe(false);
+  it("leaves the seat cap to the venue (saveEvent) but keeps min <= max and rejects nonsense", () => {
+    expect(eventSchema.safeParse({ ...valid, maxGuests: "18" }).success).toBe(true);
+    expect(eventSchema.safeParse({ ...valid, maxGuests: "501" }).success).toBe(false);
     expect(eventSchema.safeParse({ ...valid, minGuests: "8", maxGuests: "6" }).success).toBe(false);
+  });
+
+  it("defaults to BYOB and a home venue; a new space needs its seat count", () => {
+    const r = eventSchema.safeParse(valid);
+    expect(r.success && r.data.drinks).toBe("BYOB");
+    expect(r.success && r.data.venueKind).toBe("HOME");
+    const { venueId: _v, ...noVenue } = valid;
+    void _v;
+    const space = { ...noVenue, venueKind: "SPACE", venueAddress: "12 Orchard St", venueNeighborhood: "Lower East Side", venueCrossStreets: "Orchard & Rivington" };
+    expect(eventSchema.safeParse(space).success).toBe(false);
+    expect(eventSchema.safeParse({ ...space, venueCapacity: "20" }).success).toBe(true);
   });
 
   it("requires a venue, existing or new", () => {

@@ -49,6 +49,8 @@ export const PUBLIC_EVENT_SELECT = {
   mode: true,
   status: true,
   borough: true,
+  format: true,
+  credits: true,
   byob: true,
   byobNote: true,
   dietaryNotes: true,
@@ -94,4 +96,7 @@ export const PRIVATE_FIELDS = [
   "userId",
   "user",
   "reviewNote",
+  "kitchenNotes",
+  "pitches",
+  "openNight",
 ] as const;

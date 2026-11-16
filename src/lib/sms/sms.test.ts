@@ -92,12 +92,12 @@ describe("texts", () => {
   const ADDRESS = "742 Evergreen Terrace, Apt 3";
   const all = () => ({
     seatRequested: S.seatRequestedText({ ...base, bookingType: "GROUP", partySize: 3, amountCents: 16500, dietaryNotes: "One vegetarian" }),
-    confirmed: S.bookingConfirmedText({ ...base, partySize: 2, amountCents: 11000, neighborhood: "Flushing", crossStreets: "Main St & Roosevelt Ave" }),
+    confirmed: S.bookingConfirmedText({ ...base, partySize: 2, amountCents: 11000, neighborhood: "Flushing", crossStreets: "Main St & Roosevelt Ave", byob: true }),
     expired: S.requestExpiredText({ ...base, eventOver: false }),
     expiredOver: S.requestExpiredText({ ...base, eventOver: true }),
     cancelledGuest: S.eventCancelledText({ ...base, recipientName: "Ada", recipient: "guest", reason: "Fewer than the minimum confirmed by the cutoff.", cancelledBy: "system", paidCents: 5500 }),
     cancelledChef: S.eventCancelledText({ ...base, recipientName: "Casa Wong", recipient: "chef", reason: "Fewer than the minimum confirmed by the cutoff.", cancelledBy: "system", bookingsCancelled: 2 }),
-    address: S.addressRevealText({ ...base, partySize: 2, address: ADDRESS, neighborhood: "Flushing", crossStreets: "Main St & Roosevelt Ave", byobNote: null, dietaryNotes: null }),
+    address: S.addressRevealText({ ...base, partySize: 2, venueName: null, address: ADDRESS, neighborhood: "Flushing", crossStreets: "Main St & Roosevelt Ave", byob: true, byobNote: null, dietaryNotes: null }),
     review: S.reviewRequestText(base),
     approved: S.chefApplicationDecidedText({ chefName: "Casa Wong", decision: "APPROVED", note: null }),
     rejected: S.chefApplicationDecidedText({ chefName: "Casa Wong", decision: "REJECTED", note: "Send a sample menu next time." }),
