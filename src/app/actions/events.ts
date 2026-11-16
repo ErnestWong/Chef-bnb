@@ -26,12 +26,14 @@ export async function saveEventAction(_prev: FormResult | null, formData: FormDa
   const eventId = (formData.get("eventId") as string | null) || undefined;
   const raw: Record<string, unknown> = {};
   for (const key of [
-    "title", "description", "date", "time", "durationMin", "priceDollars", "minGuests", "maxGuests", "dietaryNotes", "byobNote",
-    "venueId", "venueAddress", "venueNeighborhood", "venueBorough", "venueCrossStreets", "venueLat", "venueLng", "menuId", "menuTitle", "menuCourses", "intent",
+    "title", "description", "date", "time", "durationMin", "priceDollars", "minGuests", "maxGuests", "dietaryNotes", "drinks", "byobNote",
+    "venueId", "venueKind", "venueName", "venueCapacity", "venueAddress", "venueNeighborhood", "venueBorough", "venueCrossStreets", "venueLat", "venueLng",
+    "menuId", "menuTitle", "menuCourses", "intent",
   ]) {
     const v = formData.get(key);
     raw[key] = v === null || v === "" ? undefined : v;
   }
+  raw.venueHasBar = formData.get("venueHasBar") === "on";
   raw.cuisineIds = formData.getAll("cuisineIds").map(String);
   raw.allowedBookingTypes = formData.getAll("allowedBookingTypes").map(String);
   if (raw.venueBorough === undefined) raw.venueBorough = "";
@@ -44,7 +46,7 @@ export async function saveEventAction(_prev: FormResult | null, formData: FormDa
   try {
     id = (await saveEvent(getDb(), user.id, parsed.data, eventId)).id;
   } catch (err) {
-    if (err instanceof EventError) return { ok: false, error: err.message };
+    if (err instanceof EventError) return err.field ? { ok: false, fields: { [err.field]: err.message } } : { ok: false, error: err.message };
     throw err;
   }
   revalidatePath("/events");

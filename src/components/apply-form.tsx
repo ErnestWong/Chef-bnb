@@ -2,16 +2,24 @@
 
 import { useActionState, useRef, useState, type KeyboardEvent } from "react";
 import { applyAsChefAction, type FieldErrors, type FormResult } from "@/app/actions/chefs";
-import { applySchema } from "@/lib/chefs/apply";
+import { HOSTING_PATH_LABELS, applySchema } from "@/lib/chefs/apply";
 import { BOROUGH_LABELS } from "@/lib/format";
 import { BOROUGHS } from "@/lib/queries/event-filters";
 import { Field, FormError, fieldClass } from "./form-ui";
 
 type Cuisine = { id: string; name: string };
+type Hosting = keyof typeof HOSTING_PATH_LABELS;
+
+/** "Where will you cook?" (brand guide, "Open nights"): three paths, and what each one means. */
+const HOSTING_OPTIONS: readonly [Hosting, string][] = [
+  ["HOME", "Your kitchen, your table. Ten guests at most, BYOB, and the address stays private until 48 hours before."],
+  ["OWN_SPACE", "A restaurant, studio or standing pop-up you can use. One table that seats what the room holds; its own bar if it has one."],
+  ["OPEN_NIGHTS", "Pick from rooms we've booked: restaurants on slow nights, cafés after close. Pitch a menu for a night and we say yes or no."],
+];
 
 const STEPS = [
   { title: "You", blurb: "Who's cooking" },
-  { title: "Your food", blurb: "What, and where" },
+  { title: "Your food", blurb: "What, and where you'd cook" },
   { title: "Getting paid", blurb: "How guests pay you" },
 ] as const;
 
@@ -59,7 +67,7 @@ export type ApplyDefaults = Partial<{
   instagram: string;
   website: string;
   cuisineIds: string[];
-  hosting: "HOME" | "VENUE";
+  hosting: Hosting;
   homeBorough: string;
   needsFoh: boolean;
   needsServers: boolean;
@@ -82,7 +90,7 @@ export function ApplyForm({ cuisines, defaultName, needsEmail = false, defaults 
   const [clientErrors, setClientErrors] = useState<FieldErrors>({});
   const [bioLength, setBioLength] = useState(defaults.bio?.trim().length ?? 0);
   const [picked, setPicked] = useState<string[]>(defaults.cuisineIds ?? []);
-  const [hosting, setHosting] = useState<"HOME" | "VENUE">(defaults.hosting ?? "HOME");
+  const [hosting, setHosting] = useState<Hosting>(defaults.hosting ?? "HOME");
 
   const serverErrors = state && !state.ok ? state.fields ?? {} : {};
   const errors: FieldErrors = { ...serverErrors, ...clientErrors };
@@ -240,23 +248,19 @@ export function ApplyForm({ cuisines, defaultName, needsEmail = false, defaults 
         </fieldset>
 
         <fieldset className="flex flex-col gap-2">
-          <legend className="mb-1 text-sm font-medium">Where would you host?</legend>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {(
-              [
-                ["HOME", "My home", "Your kitchen, your table. The address stays private until 48 hours before."],
-                ["VENUE", "I'd need a venue", "You cook; we'll help find a room. Fine to apply now and sort this later."],
-              ] as const
-            ).map(([value, label, hint]) => (
+          <legend className="mb-1 text-sm font-medium">Where will you cook?</legend>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {HOSTING_OPTIONS.map(([value, hint]) => (
               <label key={value} className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 ${hosting === value ? "border-accent bg-accent-soft" : "border-line hover:border-accent"}`}>
                 <input type="radio" name="hosting" value={value} checked={hosting === value} onChange={() => setHosting(value)} className="mt-1 accent-accent" />
                 <span>
-                  <span className="block font-medium">{label}</span>
+                  <span className="block font-medium">{HOSTING_PATH_LABELS[value]}</span>
                   <span className="block text-xs text-muted">{hint}</span>
                 </span>
               </label>
             ))}
           </div>
+          <span className="text-xs text-muted">You can do more than one later; this is where you&apos;d start.</span>
           {errors.hosting && <span role="alert" className="text-xs text-red-700 dark:text-red-300">{errors.hosting}</span>}
         </fieldset>
 
@@ -271,9 +275,9 @@ export function ApplyForm({ cuisines, defaultName, needsEmail = false, defaults 
           </Field>
           <div className="flex flex-col gap-2 text-sm">
             <span className="font-medium">Would you want help on the night?</span>
-            <label className="flex items-center gap-2"><input type="checkbox" name="needsFoh" defaultChecked={defaults.needsFoh} className="accent-accent" /> Front-of-house (greeting, seating, pacing)</label>
-            <label className="flex items-center gap-2"><input type="checkbox" name="needsServers" defaultChecked={defaults.needsServers} className="accent-accent" /> Servers</label>
-            <span className="text-xs text-muted">Just so we know; nothing is arranged yet.</span>
+            <label className="flex items-center gap-2"><input type="checkbox" name="needsFoh" defaultChecked={defaults.needsFoh} className="accent-accent" /> A host at the door (greeting, seating, pacing)</label>
+            <label className="flex items-center gap-2"><input type="checkbox" name="needsServers" defaultChecked={defaults.needsServers} className="accent-accent" /> Servers or extra hands</label>
+            <span className="text-xs text-muted">On open nights we can bring a host, table styling and a photographer. Tell us what you&apos;d want.</span>
           </div>
         </div>
       </section>
@@ -298,15 +302,15 @@ export function ApplyForm({ cuisines, defaultName, needsEmail = false, defaults 
           <ol className="mt-2 list-decimal space-y-1 pl-5 text-muted">
             <li>We read your application, usually within a few days.</li>
             <li>You get an email either way; your status also shows on your chef page.</li>
-            <li>Once approved, you publish your first dinner. Photos and a menu PDF can be added then.</li>
+            <li>Once approved, you publish your first dinner or pitch for one of our open nights. Photos and a menu PDF can be added then.</li>
           </ol>
           {cuisineNames.length > 0 && (
             <p className="mt-3 text-xs text-muted">
-              Applying as <span className="text-foreground">{cuisineNames.join(", ")}</span>, hosting {hosting === "HOME" ? "at home" : "at a venue"}.
+              Applying as <span className="text-foreground">{cuisineNames.join(", ")}</span>, cooking {HOSTING_PATH_LABELS[hosting].toLowerCase()}.
             </p>
           )}
           <p className="mt-3 text-xs text-muted">
-            Sending means you agree to the <a href="/terms#chefs" className="text-accent underline-offset-2 hover:underline">terms for hosts</a>: BYOB, the guest cap, honoring confirmed bookings, and keeping guests&apos; details private.
+            Sending means you agree to the <a href="/terms#chefs" className="text-accent underline-offset-2 hover:underline">terms for hosts</a>: you never sell drinks, you seat no more than the listing says, you honor confirmed bookings, and you keep guests&apos; details private.
           </p>
         </div>
       </section>

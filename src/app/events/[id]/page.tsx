@@ -7,6 +7,7 @@ import { VenueMap } from "@/components/venue-map";
 import { Badge, ButtonLink, Container, Monogram, Stars } from "@/components/ui";
 import { formatDuration, formatEventDay, formatEventTime, formatMoney, pluralize } from "@/lib/format";
 import { RULES } from "@/lib/bookings/rules";
+import { FORMAT_LABELS } from "@/lib/events/formats";
 import { getPublicEvent, listReviewsForEvent } from "@/lib/queries/events";
 
 export async function generateMetadata({ params }: PageProps<"/events/[id]">): Promise<Metadata> {
@@ -45,6 +46,7 @@ async function EventDetails({ params }: { params: PageProps<"/events/[id]">["par
         <div className="mt-4 grid gap-10 lg:grid-cols-[1fr_360px]">
           <article>
             <div className="flex flex-wrap gap-1.5">
+              <Badge tone="accent">{FORMAT_LABELS[event.format]}</Badge>
               {event.cuisines.map((c) => (
                 <Badge key={c.id}>{c.name}</Badge>
               ))}
@@ -100,11 +102,18 @@ async function EventDetails({ params }: { params: PageProps<"/events/[id]">["par
                 <h2 className="font-display text-2xl">Good to know</h2>
                 <ul className="mt-3 flex flex-col gap-2 text-sm">
                   <li>
-                    <span className="font-medium">BYOB.</span> {event.byobNote ?? "Bring whatever you'd like to drink; nothing is sold or included."}
+                    <span className="font-medium">One table of {event.maxGuests}, one seating.</span>{" "}
+                    {event.format === "HOME" ? "At the chef's place." : "In a room booked for the night."} The dinner runs if at least {event.minGuests} confirm by {RULES.GO_NO_GO_HOURS} hours before; otherwise it&apos;s cancelled and everyone is told.
                   </li>
-                  <li>
-                    <span className="font-medium">Table of {event.maxGuests} at most.</span> The dinner runs if at least {event.minGuests} confirm by {RULES.GO_NO_GO_HOURS} hours before; otherwise it&apos;s cancelled and everyone is told.
-                  </li>
+                  {event.byob ? (
+                    <li>
+                      <span className="font-medium">BYOB.</span> {event.byobNote ?? "Bring whatever you'd like to drink; nothing is sold or included."}
+                    </li>
+                  ) : (
+                    <li>
+                      <span className="font-medium">Bar open.</span> {event.byobNote ?? "The venue's bar pours under its own license. Drinks aren't part of your ticket."}
+                    </li>
+                  )}
                   {event.dietaryNotes && (
                     <li>
                       <span className="font-medium">Dietary.</span> {event.dietaryNotes}
@@ -186,6 +195,7 @@ async function EventDetails({ params }: { params: PageProps<"/events/[id]">["par
                 </span>
               </Link>
               <p className="mt-3 line-clamp-3 text-sm text-muted">{event.chef.bio}</p>
+              {event.credits && <p className="mt-3 font-mono text-xs text-muted">{event.credits}</p>}
             </div>
           </aside>
         </div>

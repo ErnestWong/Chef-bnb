@@ -103,6 +103,34 @@ Position it as "a better night out than a restaurant, easier than hosting": warm
 - References to study: Luma (event pages), Resy (polish without stiffness), Airbnb Experiences (host storytelling), Timeleft (approachable solo onboarding).
 - Name: still open; worth testing 3–5 candidates with target users.
 
+## Shared spaces and open nights
+
+_Decided 2026-11-16._ The promise moves from "a real home" to "a real table". Few chefs have an apartment that seats eight and the appetite to host strangers there every few weeks, and selling home-cooked meals to the public is the plan's biggest legal exposure. So shared, licensed spaces carry most dinners, and home dinners stay as the rarer format.
+
+**What never changes, in any room:** one table (or tables pushed together), one seating, everyone starts together, the chef comes out to the room, and guests sit with people they haven't met. A night with separate two-tops and turned tables is not a Covers dinner. That rule is what keeps a room night a dinner party and not a pop-up.
+
+**Formats.** Guests see two labels on the event card; chefs pick one of three paths at onboarding.
+
+| Chef's path | Guest label | Seats | Drinks |
+|---|---|---|---|
+| A night Covers has booked (restaurant slow night, café after close, loft or studio kitchen) | Room | No cap beyond the venue's capacity | The venue's bar where licensed, else BYOB |
+| The chef's own space (restaurant, studio, standing pop-up) | Room | No cap beyond the venue's capacity | The chef's or venue's license, else BYOB |
+| At home (supper clubs like Casa Wong) | Home | 10 at most | BYOB |
+
+**Open nights.** Covers signs venues and holds nights on their calendars ahead of time; chefs fill them.
+
+1. After approval the chef answers "Where will you cook?": at my place, in my own space, or on one of your nights.
+2. The open-nights board lists each night: venue, neighborhood, date and time, seat range, kitchen equipment, bar or BYOB, the venue's terms, and what the chef nets at a full table.
+3. The chef pitches a menu and price for one night; Covers (Ernest or Hellen) approves or declines.
+4. On approval the dinner is created as the chef's draft with the room, date and time filled in. The chef checks it and publishes; guests book and pay the chef directly, and the address goes out 48 hours before, as today. Until payments move on-platform, the venue's share is settled after the night (who settles it is an open question).
+5. Nights that sell turn into a residency: the same night every week for a month. Later, chefs at 4.7 or better across three dinners can claim nights without a pitch.
+
+**Venue deals.** Start with revenue share (venue takes a share of tickets, e.g. 25%) or a bar minimum (venue keeps the bar, the room is free) on slow nights, so an unsold night costs Covers nothing. Pay flat rent only for prime nights, and only once a venue's nights reliably sell. Terms are set per venue.
+
+**The night's crew.** Hosting, table styling, photography and extra hands are add-ons run by named people (Hellen and partner coordinators), credited on the event page ("Hosted by Hellen · Table by [stylist]"). The same crew makes private dinners and buyouts (the occasion persona) possible: a request is matched to a chef and a room, with a coordination fee.
+
+**Sequencing.** Sign two venues for open nights before the first public dinners; run one Casa Wong room night with Hellen hosting to prove both formats under one brand and to get real photos.
+
 ## MVP scope
 
 The MVP proves one loop: a chef lists a dinner, guests discover and pay for seats, the dinner happens, guests review it. Everything else is deferred.
@@ -111,7 +139,7 @@ The MVP proves one loop: a chef lists a dinner, guests discover and pay for seat
 
 - [ ] Sign-in (decided 2026-11-14: phone number + texted code, email added on the chef application; Google optional later), then an intake application (bio, credentials, website/Instagram, cuisine categories, sample menu upload, photos, hosting setup: home or venue, needs FOH/servers/venue — stored now, used later)
 - [ ] Manual approval by admin before a chef can publish
-- [ ] Create event: date, start time, duration, neighborhood + private address, cuisine tags, menu (text + optional PDF), fixed price per person, min and max guests (max capped at 10), which booking types are allowed (seat / group / full buyout), dietary notes, BYOB guidance (BYOB only; no alcohol sold)
+- [ ] Create event: date, start time, duration, neighborhood + private address, cuisine tags, menu (text + optional PDF), fixed price per person, min and max guests (max capped at 10 at home; no cap beyond venue capacity in a room, decided 2026-11-16), which booking types are allowed (seat / group / full buyout), dietary notes, drinks (BYOB at home; a room may use its venue's licensed bar)
 - [ ] Event dashboard: guest list, headcount vs. minimum, guest dietary notes, message all guests
 - [ ] Public profile: bio, credentials, past events count, average rating, reviews
 - [ ] Mark each booking as paid (offline) and, after the dinner, as attended or no-show
@@ -132,7 +160,7 @@ The MVP proves one loop: a chef lists a dinner, guests discover and pay for seat
 **Deferred**
 
 - Native mobile apps
-- Venue marketplace and FOH/server staffing matching
+- FOH/server staffing matching beyond the named crew add-ons (open nights and Covers-booked venues moved into scope 2026-11-16; see Shared spaces and open nights)
 - Guest-to-guest messaging, matching algorithms
 - Chef-proposed private hires on arbitrary dates (request-a-date flow)
 - Waitlists, gift cards, memberships
@@ -163,18 +191,20 @@ One `users` table with roles keeps auth simple: a person can be both a guest and
 | Table | Key fields | Relationships |
 |---|---|---|
 | users | id, google_sub, email, name, avatar_url, phone, roles (guest/chef/admin), created_at | 1–1 chef_profiles; 1–many bookings, reviews |
-| chef_profiles | user_id, display_name, slug, bio, credentials, website, instagram, home_borough, status (applied/approved/rejected/suspended), food_cert_number, insurance_on_file, needs_foh, needs_servers, needs_venue, payment_handle (Venmo/Zelle, shown after a seat request) | 1–many events, menus |
+| chef_profiles | user_id, display_name, slug, bio, credentials, website, instagram, home_borough, status (applied/approved/rejected/suspended), food_cert_number, insurance_on_file, needs_foh, needs_servers, hosting_path (home / own_space / open_nights; replaces needs_venue), payment_handle (Venmo/Zelle, shown after a seat request) | 1–many events, menus, night_pitches |
 | cuisines | id, name (fusion, bistro, Cantonese, ...) | many–many chef_profiles and events |
 | menus | id, chef_id, title, courses (JSON), pdf_url, is_sample | 1–many events |
-| venues | id, type (chef_home / partner_venue), address (private), neighborhood, borough, cross_streets, lat/lng (public, rounded), capacity, owner_user_id | 1–many events |
-| events | id, chef_id, venue_id, menu_id, title, starts_at, duration_min, price_cents, min_guests, max_guests (≤ 10), allowed_booking_types, go_no_go_at, mode (unsold/open/bought_out), status (draft/published/cancelled/completed), byob, dietary_notes | 1–many bookings, reviews |
+| venues | id, type (chef_home / chef_space / partner_venue), name and address (private), description and kitchen_notes (chefs only), has_bar, neighborhood, borough, cross_streets, lat/lng (public, rounded), capacity, owner_user_id (null for partner_venue) | 1–many events, open_nights |
+| open_nights | id, venue_id (a partner_venue), starts_at, duration_min, min_seats, max_seats, venue_share_pct, venue_fee_cents, terms, suggested_price_cents, crew (public credits), status (open/taken/cancelled) | 1–many night_pitches; 1–1 event |
+| night_pitches | id, open_night_id, chef_id, title, pitch, price_cents, max_guests, status (pending/approved/declined/withdrawn), decision_note; one per chef per night | belongs to open_night, chef |
+| events | id, chef_id, venue_id, menu_id, open_night_id, format (home/room), title, starts_at, duration_min, price_cents, min_guests, max_guests (≤ 10 at home), allowed_booking_types, go_no_go_at, mode (unsold/open/bought_out), status (draft/published/cancelled/completed), byob (always at home; a room may use its bar), credits, dietary_notes | 1–many bookings, reviews |
 | bookings | id, event_id, guest_user_id, type (seat/group/buyout), party_size, amount_cents, platform_fee_cents, status (requested/confirmed/expired/cancelled/attended/no_show), paid_marked_at, address_sent_at, review_requested_at, dietary_notes | 1–1 review |
 | reviews | id, booking_id (unique), event_id, chef_id, rating 1–5, body, is_anonymous (default true), created_at | belongs to booking |
 | payouts | Deferred until payments move on-platform | belongs to event |
 
 Derived fields to compute rather than store at first: chef's dinners hosted (completed events), average rating, guest's dinners attended (bookings with status attended).
 
-Two constraints to enforce in the database, not just the app: max_guests ≤ 10, and requested + confirmed party_size per event ≤ max_guests (use a row lock on the event during booking), and one review per booking.
+Constraints to enforce in the database, not just the app: max_guests ≤ 10 and byob for HOME dinners (a ROOM seats what its venue holds), requested + confirmed party_size per event ≤ max_guests (use a row lock on the event during booking), one review per booking, one pitch per chef per night, and an owner on every venue except partner rooms. Approving a pitch locks its night row so two approvals can't both take it.
 
 ## Tech stack and architecture
 
@@ -217,7 +247,9 @@ One table is added beyond the Data model section: `booking_log` (booking_id, fro
 |---|---|---|---|---|---|
 | Event, menu, price, seats left | Yes | Yes | Yes | Yes | Yes |
 | Neighborhood + nearest intersection | Yes | Yes | Yes | Yes | Yes |
-| Exact address | No | No | From 48 h before | Yes | Yes |
+| Exact address (and a room's name) | No | No | From 48 h before | Yes | Yes |
+| Open nights: room name, kitchen, venue terms | No | No | No | Approved chefs (street address only once their pitch is approved) | Yes |
+| Dinner format (home/room), drinks, crew credits | Yes | Yes | Yes | Yes | Yes |
 | Chef payment handle | No | After requesting a seat | Yes | Yes | Yes |
 | Guest names and party sizes | No | No | No | Yes | Yes |
 | Guest email and dietary notes | No | No | Own only | Yes | Yes |
@@ -232,7 +264,7 @@ Enforcement rule: event pages are rendered from a public query that never select
 |---|---|---|---|
 | Apply as chef | Signed-in user | chef_profiles (status applied) | One profile per user |
 | Approve / reject chef | Admin | chef_profiles.status | — |
-| Create / publish event | Approved chef | events | max_guests ≤ 10, min ≤ max, starts in the future, venue belongs to chef |
+| Create / publish event | Approved chef | events | max_guests ≤ 10 at home (a room: what the venue holds, or the open night's range), min ≤ max, starts in the future, venue belongs to chef (or comes from the chef's approved open night) |
 | Request seats | Guest | bookings (requested), booking_log, events.mode | Row lock on the event; requested + confirmed party sizes ≤ max; buyout only if no other bookings |
 | Mark paid | Chef | bookings (confirmed), booking_log | Booking is on chef's event, still requested |
 | Cancel | Guest or chef | bookings (cancelled), booking_log | Before event start |
@@ -301,20 +333,23 @@ Validate with hand-run dinners before building the booking system. Durations are
 | Validate | Weeks 1–4 | Lawyer consult; sell 5–8 dinners paid offline; recruit 5 chefs | 70%+ fill, legal path chosen |
 | Build MVP | Weeks 5–12 | Auth, chef intake; events and booking; paid/attended tracking; reviews, admin | First paid on-platform dinner |
 | Launch | Months 4–6 | 2–3 neighborhoods; 2–4 dinners a week; 10–15 chefs; fee settled offline | Repeat guests within 60 days |
-| Expand | Month 7 on | Venue partners; FOH staffing; private-hire requests; native app, if needed | — |
+| Expand | Month 7 on | More venue partners and residencies; FOH staffing; private-hire requests; native app, if needed | — |
 
 Durations assume one engineer part-time plus your evenings; the gates matter more than the dates. If gate 1 fails on legality, the plan shifts to venue-hosted events, not to a different product.
 
 ## Open questions
 
-- [ ] Legal: BYOB and a 10-guest cap are decided. Still open: home-hosted public seats vs. venue or buyout only, which turns on the health permit. Get a NYC food/hospitality lawyer's opinion.
-- [ ] Alcohol: decided, BYOB only. Confirm the 19-person BYOB rule against SLA Advisory 2022-31 itself.
+- [ ] Legal: decided 2026-11-16 that licensed shared spaces carry most dinners. Still open for the lawyer: how publicly home dinners can be sold, who holds the liquor license and insurance on a room night, and whether chefs and crew are contractors.
+- [ ] Alcohol: BYOB at home; room nights may use the venue's licensed bar (2026-11-16). Confirm the 19-person BYOB rule against SLA Advisory 2022-31 itself.
 - [ ] Fee: does the eventual 10% come from the chef's price or sit on top for the guest?
 - [ ] Anonymous reviews: fully anonymous to everyone, or visible to the chef only? Anonymity reduces accountability for unfair reviews.
 - [ ] Should guests be reviewable by chefs (no-shows, behaviour), as Airbnb does both ways?
 - [ ] Max group size for non-buyout bookings: 5, or chef-set?
 - [ ] Vetting bar: what credentials or trial dinner does a chef need to pass?
 - [ ] Name and domain.
+- [ ] Venue nights (2026-11-16): who pays for the host and table styling at launch (Covers, the chef, or the ticket)? Is a trial of dinners in borrowed homes (Sofar-style host homes) worth running?
+- [ ] Venue share settlement (2026-11-16): until payments move on-platform, guests pay the chef. Does the chef pay the venue its share directly after the night, or through Covers? The app shows the share and says it's settled after the night, without naming who pays.
+- [ ] Open nights: if a dinner from an open night is cancelled (by the chef or go/no-go), should the night go back on the board? Today it stays taken; an admin can add a new night.
 - [ ] Phone-first sign-in (decided 2026-11-14): confirm whether to add an emailed-code fallback for guests without a US-reachable phone (tourists), and whether chefs may sign in by email once Google or an email code exists.
 - [ ] Terms and privacy (drafted 2026-11-14 at `/terms`, `/privacy`): lawyer to confirm the refund rule when a guest cancels (today: chef's call), the liability cap, and what account deletion keeps.
 

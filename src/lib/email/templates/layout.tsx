@@ -44,7 +44,7 @@ export function EmailLayout({ preview, heading, children, cta }: { preview: stri
           )}
           <Hr style={styles.hr} />
           <Text style={styles.muted}>
-            {BRAND} · ticketed dinner parties cooked by NYC chefs. Every dinner is BYOB and seats ten at most.{" "}
+            {BRAND} · ticketed dinner parties cooked by NYC chefs. One table, one seating, everyone at it.{" "}
             <Link href={appUrl("/")} style={styles.link}>{appUrl("/").replace(/^https?:\/\//, "")}</Link>
           </Text>
         </Container>

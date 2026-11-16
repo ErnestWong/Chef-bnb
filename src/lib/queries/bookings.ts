@@ -32,6 +32,8 @@ const GUEST_BOOKING_SELECT = {
       durationMin: true,
       status: true,
       borough: true,
+      format: true,
+      byob: true,
       venue: { select: { neighborhood: true, crossStreets: true } },
       chef: {
         select: {
@@ -63,6 +65,18 @@ export async function getBookingForGuest(id: string, user: CurrentUser): Promise
   });
 }
 
+/** A chef's own venues for the dinner form (their home or their own space). */
+export const CHEF_VENUE_SELECT = {
+  id: true,
+  type: true,
+  name: true,
+  neighborhood: true,
+  borough: true,
+  crossStreets: true,
+  capacity: true,
+  hasBar: true,
+} satisfies Prisma.VenueSelect;
+
 const CHEF_EVENT_SELECT = {
   id: true,
   title: true,
@@ -74,6 +88,13 @@ const CHEF_EVENT_SELECT = {
   minGuests: true,
   maxGuests: true,
   goNoGoAt: true,
+  format: true,
+  byob: true,
+  credits: true,
+  openNightId: true,
+  // Private to the chef of this event (and admin): a room's name and address, and what the venue takes.
+  venue: { select: { type: true, name: true, address: true, neighborhood: true, crossStreets: true } },
+  openNight: { select: { venueSharePct: true, venueFeeCents: true, terms: true } },
   bookings: {
     select: {
       id: true,

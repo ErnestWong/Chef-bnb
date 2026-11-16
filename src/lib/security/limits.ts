@@ -18,6 +18,8 @@ export const LIMITS = {
   reviewsPerUser: { limit: 10, windowSeconds: 24 * 60 * 60 },
   /** Event creates and edits by one chef. */
   eventSavesPerChef: { limit: 60, windowSeconds: 60 * 60 },
+  /** Open-night pitches and withdrawals by one chef. */
+  pitchesPerChef: { limit: 20, windowSeconds: 60 * 60 },
   /** Admin moderation actions (approve, reject, remove review). */
   adminActionsPerUser: { limit: 120, windowSeconds: 60 * 60 },
 } as const satisfies Record<string, RateLimitRule>;

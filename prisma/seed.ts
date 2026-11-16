@@ -1,7 +1,8 @@
 /**
- * Seed: 5 fake chefs with 5 dinners each (25 events across boroughs,
- * cuisines and dates), 5 fake guests, bookings in every state, reviews, and a
- * small admin queue, so every screen has something to show.
+ * Seed: 5 fake chefs with dinners at home, in a chef's own space and in rooms
+ * Covers has booked (events across boroughs, cuisines and dates), 3 partner
+ * rooms with open nights and pitches, 5 fake guests, bookings in every state,
+ * reviews, and a small admin queue, so every screen has something to show.
  *
  *   pnpm db:seed
  *
@@ -185,6 +186,56 @@ const chefs: ChefSeed[] = [
 
 const guestNames = ["Priya Natarajan", "Jordan Lee", "Sam Okafor", "Elena Petrova", "Marcus Hill"];
 
+/** "Where will you cook?" per chef (default: at home). */
+const HOSTING: Record<string, "HOME" | "OWN_SPACE" | "OPEN_NIGHTS"> = { "hana-kim": "OPEN_NIGHTS", "luca-bianchi": "OWN_SPACE" };
+
+/** Luca's own space: a friend's trattoria he takes over on Sundays (a CHEF_SPACE venue, so his dinners there are ROOM dinners). */
+const LUCA_SPACE = { name: "The back room at a friend's trattoria", neighborhood: "Lower East Side", borough: "MANHATTAN" as Borough, crossStreets: "Essex St & Delancey St", lat: 40.719, lng: -73.988, capacity: 16, hasBar: true };
+
+/**
+ * Rooms Covers has booked (PARTNER_VENUE): generic demo names and addresses,
+ * shown only to chefs, admins and confirmed guests. Each carries the deal the
+ * venue agreed to, used for its open nights.
+ */
+const ROOMS = [
+  {
+    name: "Café on Fulton", description: "A café after close", kitchenNotes: "6 burners · 2 ovens · walk-in", hasBar: false,
+    address: "Fulton St at Nostrand Ave (demo address)", neighborhood: "Bedford-Stuyvesant", borough: "BROOKLYN" as Borough, crossStreets: "Fulton St & Nostrand Ave", lat: 40.681, lng: -73.95, capacity: 22,
+    deal: { sharePct: 25, feeCents: 0, terms: "out by 11", guideCents: 8500 },
+  },
+  {
+    name: "Ludlow wine bar, back room", description: "A wine bar's back room on its night off", kitchenNotes: "4 burners · combi oven · no walk-in", hasBar: true,
+    address: "Ludlow St at Stanton St (demo address)", neighborhood: "Lower East Side", borough: "MANHATTAN" as Borough, crossStreets: "Ludlow St & Stanton St", lat: 40.721, lng: -73.988, capacity: 18,
+    deal: { sharePct: 20, feeCents: 15000, terms: "keeps the bar", guideCents: 9500 },
+  },
+  {
+    name: "LIC studio kitchen", description: "A studio kitchen with one long table", kitchenNotes: "8 burners · 2 combi ovens · walk-in · dish pit", hasBar: false,
+    address: "Vernon Blvd at 47th Ave (demo address)", neighborhood: "Long Island City", borough: "QUEENS" as Borough, crossStreets: "Vernon Blvd & 47th Ave", lat: 40.745, lng: -73.953, capacity: 28,
+    deal: { sharePct: 0, feeCents: 40000, terms: "load-in from 3 pm", guideCents: 11000 },
+  },
+];
+
+/** Crew credits on the demo's room nights: fictional names. */
+const CREW = "Hosted by Ana · Table by Rosa";
+
+/** Nights still on the board (no dinner yet), some with pitches waiting for the admin. */
+const OPEN_NIGHTS: { room: number; daysFromNow: number; hour: number; minSeats: number; maxSeats: number; crew?: string; pitches?: { chef: number; title: string; pitch: string; price: number; seats: number }[] }[] = [
+  {
+    room: 0, daysFromNow: 9, hour: 19, minSeats: 12, maxSeats: 20, crew: CREW,
+    pitches: [{ chef: 3, title: "Banchan for Twenty, Again", pitch: "Thirty little plates down one long table, galbi jjim at each end, hotteok to finish. Same as last time, with a second braise.", price: 85, seats: 20 }],
+  },
+  { room: 1, daysFromNow: 12, hour: 19, minSeats: 10, maxSeats: 16 },
+  {
+    room: 2, daysFromNow: 16, hour: 19, minSeats: 14, maxSeats: 24,
+    pitches: [
+      { chef: 1, title: "Greenmarket for Twenty-Four", pitch: "Whatever the market has that morning, cooked simply for one long table: radishes and butter, a big roast, an apple tart. Family style, nobody leaves hungry.", price: 110, seats: 24 },
+      { chef: 2, title: "Mole for a Crowd", pitch: "Two moles, a comal going all night, tetelas and tlayudas for the table, nicuatole to finish. Twenty seats, loud, warm.", price: 95, seats: 20 },
+    ],
+  },
+  { room: 0, daysFromNow: 23, hour: 19, minSeats: 12, maxSeats: 20 },
+  { room: 1, daysFromNow: 30, hour: 18, minSeats: 10, maxSeats: 16, crew: "Hosted by Ana" },
+];
+
 type EventSeed = {
   chef: number;
   title: string;
@@ -198,6 +249,12 @@ type EventSeed = {
   status?: "DRAFT" | "PUBLISHED" | "CANCELLED" | "COMPLETED";
   dietary?: string;
   photos?: string[];
+  /** A room Covers booked (index into ROOMS): the dinner came from an open night. */
+  room?: number;
+  /** In the chef's own space (Luca's trattoria) rather than at home. */
+  space?: true;
+  credits?: string;
+  drinksNote?: string;
 };
 
 /**
@@ -235,6 +292,7 @@ const events: EventSeed[] = [
   { chef: 0, title: "Dim Sum Brunch Table", description: "Har gow, siu mai, cheung fun and turnip cake, all folded that morning. Bring something sparkling.", daysFromNow: 5, hour: 11, price: 5500, min: 4, max: 10, types: ["SEAT", "GROUP"], dietary: "Shellfish throughout; vegetarian plates on request", photos: [PHOTOS.dimsum, PHOTOS.table] },
   { chef: 0, title: "Hot Pot for the Whole Table", description: "Two broths, a table full of things to dip, and nobody leaves before midnight. Buyouts and big groups only.", daysFromNow: 21, hour: 18, price: 7500, min: 6, max: 10, types: ["BUYOUT", "GROUP"], photos: [PHOTOS.noodles] },
   { chef: 0, title: "Lunar New Year Preview", description: "Eight lucky dishes, a trial run of the family menu before the real thing.", daysFromNow: 33, hour: 18, price: 8000, min: 6, max: 10, types: ["SEAT", "GROUP", "BUYOUT"], photos: [PHOTOS.feast] },
+  { chef: 0, title: "Casa Wong at the Wine Bar", description: "The Sunday feast for sixteen at one long table in a Ludlow Street back room. Clay-pot rice, a whole fish, soy chicken. The bar's open, so leave the bottle at home.", daysFromNow: 19, hour: 19, price: 9500, min: 10, max: 16, types: ["SEAT", "GROUP", "BUYOUT"], room: 1, credits: CREW, drinksNote: "The bar pours natural wine and a few amari; drinks aren't part of your ticket.", photos: [PHOTOS.feast, PHOTOS.wine, PHOTOS.party] },
   { chef: 0, title: "Winter Congee Night", description: "Not announced yet. Congee three ways and youtiao.", daysFromNow: 40, hour: 19, price: 4500, min: 4, max: 8, types: ["SEAT", "GROUP"], status: "DRAFT" },
   // Maya Rosen
   { chef: 1, title: "Greenmarket Supper", description: "Whatever looked best at Union Square that morning, cooked simply, served family style.", daysFromNow: -14, hour: 19, price: 8500, min: 4, max: 10, types: ["SEAT", "GROUP", "BUYOUT"], status: "COMPLETED", photos: [PHOTOS.greens, PHOTOS.market, PHOTOS.candles] },
@@ -252,8 +310,10 @@ const events: EventSeed[] = [
   { chef: 2, title: "Tlayudas on the Patio", description: "Same menu, outside, heat lamps on. Bring a jacket and a bottle of mezcal.", daysFromNow: 12, hour: 18, price: 6500, min: 6, max: 10, types: ["SEAT", "GROUP"], photos: [PHOTOS.tacos, PHOTOS.candles] },
   { chef: 2, title: "Día de Muertos Table", description: "Pan de muerto, mole, hot chocolate. An ofrenda in the corner; bring a photo if you like.", daysFromNow: 19, hour: 19, price: 7500, min: 6, max: 8, types: ["GROUP", "BUYOUT"], photos: [PHOTOS.candles] },
   { chef: 2, title: "Masa Workshop Dinner", description: "Nixtamalize, grind, press and eat. You go home with a kilo of masa and a sense of superiority.", daysFromNow: 26, hour: 17, price: 9500, min: 4, max: 6, types: ["SEAT", "GROUP"], photos: [PHOTOS.toast] },
+  { chef: 2, title: "Mole for Twenty-Four", description: "The two-day mole negro for a whole studio kitchen: one long table, tortillas off three comals, a salsa bar. Bring mezcal.", daysFromNow: 37, hour: 19, price: 9000, min: 14, max: 24, types: ["SEAT", "GROUP", "BUYOUT"], room: 2, credits: "Hosted by Ana", photos: [PHOTOS.mexican, PHOTOS.room] },
   // Hana Kim
   { chef: 3, title: "Banchan Marathon", description: "Twelve banchan, galbi jjim, and a stew for the table. Pace yourself.", daysFromNow: -10, hour: 19, price: 8000, min: 4, max: 8, types: ["SEAT", "GROUP"], status: "COMPLETED", photos: [PHOTOS.korean, PHOTOS.table, PHOTOS.party] },
+  { chef: 3, title: "Banchan for Twenty", description: "Twenty seats at one table in a café after close: thirty little plates and a pot of galbi jjim at each end.", daysFromNow: -12, hour: 19, price: 8500, min: 12, max: 20, types: ["SEAT", "GROUP"], status: "COMPLETED", room: 0, credits: CREW, photos: [PHOTOS.party, PHOTOS.korean, PHOTOS.candles] },
   { chef: 3, title: "Kimchi Day", description: "We make a season of kimchi, then eat jjigae, pajeon and rice while it starts to ferment. You take a jar home.", daysFromNow: -49, hour: 15, price: 7000, min: 4, max: 8, types: ["SEAT", "GROUP"], status: "COMPLETED", photos: [PHOTOS.stew, PHOTOS.hands] },
   { chef: 3, title: "Hanshik Tasting", description: "A nine-course Korean tasting; the plated, quiet cousin of the banchan marathon.", daysFromNow: -70, hour: 19, price: 11000, min: 4, max: 6, types: ["SEAT", "GROUP", "BUYOUT"], status: "COMPLETED", photos: [PHOTOS.plate, PHOTOS.candles] },
   { chef: 3, title: "Banchan for Six", description: "Past its cutoff with too few confirmed guests: the go/no-go job will cancel it. Here so the admin button has something to do.", daysFromNow: 2, hour: 19, price: 8000, min: 6, max: 8, types: ["SEAT", "GROUP"] },
@@ -266,7 +326,7 @@ const events: EventSeed[] = [
   { chef: 4, title: "Carbonara Clinic", description: "Guanciale, pecorino, eggs, no cream, no arguments. Hands-on, then dinner.", daysFromNow: -84, hour: 18, price: 8500, min: 4, max: 6, types: ["SEAT", "GROUP"], status: "COMPLETED", photos: [PHOTOS.hands, PHOTOS.pasta] },
   { chef: 4, title: "Cacio e Pepe Night", description: "Three pastas, one of them twice. Bring a Lazio red if you can find one, anything red if you can't.", daysFromNow: 8, hour: 19, price: 7000, min: 4, max: 8, types: ["SEAT", "GROUP", "BUYOUT"], photos: [PHOTOS.pasta2, PHOTOS.wine] },
   { chef: 4, title: "Pasta for Eight", description: "Your table, your people, my pasta. Whole-table bookings only, six to eight guests.", daysFromNow: 15, hour: 19, price: 8000, min: 6, max: 8, types: ["BUYOUT"], photos: [PHOTOS.pasta] },
-  { chef: 4, title: "Roman Trattoria Sunday", description: "The Sunday lunch again. Same menu, new artichokes.", daysFromNow: 24, hour: 14, price: 7500, min: 4, max: 8, types: ["SEAT", "GROUP", "BUYOUT"], photos: [PHOTOS.room] },
+  { chef: 4, title: "Roman Trattoria Sunday", description: "The Sunday lunch again, in a friend's trattoria this time: one table of fourteen, same menu, new artichokes.", daysFromNow: 24, hour: 14, price: 7500, min: 8, max: 14, types: ["SEAT", "GROUP", "BUYOUT"], space: true, drinksNote: "The trattoria's bar pours Lazio reds by the glass.", photos: [PHOTOS.room, PHOTOS.wine] },
   { chef: 4, title: "Carbonara Clinic", description: "Guanciale, pecorino, eggs, no cream, no arguments. Hands-on, then dinner.", daysFromNow: 36, hour: 18, price: 8500, min: 4, max: 6, types: ["SEAT", "GROUP"], photos: [PHOTOS.hands] },
 ];
 
@@ -282,6 +342,8 @@ async function reset() {
   await db.bookingLog.deleteMany();
   await db.booking.deleteMany();
   await db.event.deleteMany();
+  await db.nightPitch.deleteMany();
+  await db.openNight.deleteMany();
   await db.menu.deleteMany();
   await db.venue.deleteMany();
   await db.chefProfile.deleteMany();
@@ -325,6 +387,8 @@ async function main(): Promise<string> {
         instagram: c.instagram,
         homeBorough: c.borough,
         status: "APPROVED",
+        hostingPath: HOSTING[c.slug] ?? "HOME",
+        needsVenue: HOSTING[c.slug] === "OPEN_NIGHTS",
         paymentHandle: c.paymentHandle,
         paymentNote: "Venmo or Zelle within 48 hours to hold your seat.",
         cuisines: { connect: c.cuisines.map((name) => ({ id: cuisineBySlug[name] })) },
@@ -381,6 +445,34 @@ async function main(): Promise<string> {
     });
   }
 
+  // Luca's own space, and the rooms Covers has booked.
+  const lucaUserId = (await db.chefProfile.findUniqueOrThrow({ where: { id: chefIds[4] }, select: { userId: true } })).userId;
+  const spaceVenueId = (
+    await db.venue.create({
+      data: { ownerUserId: lucaUserId, type: "CHEF_SPACE", name: LUCA_SPACE.name, hasBar: LUCA_SPACE.hasBar, address: "Essex St at Delancey St (demo address)", neighborhood: LUCA_SPACE.neighborhood, borough: LUCA_SPACE.borough, crossStreets: LUCA_SPACE.crossStreets, lat: LUCA_SPACE.lat, lng: LUCA_SPACE.lng, capacity: LUCA_SPACE.capacity },
+    })
+  ).id;
+  const roomIds: string[] = [];
+  for (const r of ROOMS) {
+    const { deal: _deal, ...venue } = r;
+    void _deal;
+    roomIds.push((await db.venue.create({ data: { ...venue, ownerUserId: null, type: "PARTNER_VENUE" } })).id);
+  }
+  let pitchesCreated = 0;
+  for (const n of OPEN_NIGHTS) {
+    const room = ROOMS[n.room];
+    const night = await db.openNight.create({
+      data: {
+        venueId: roomIds[n.room], startsAt: at(n.daysFromNow, n.hour), durationMin: 180, minSeats: n.minSeats, maxSeats: n.maxSeats,
+        venueSharePct: room.deal.sharePct, venueFeeCents: room.deal.feeCents, terms: room.deal.terms, suggestedPriceCents: room.deal.guideCents, crew: n.crew ?? null,
+      },
+    });
+    for (const p of n.pitches ?? []) {
+      await db.nightPitch.create({ data: { openNightId: night.id, chefId: chefIds[p.chef], title: p.title, pitch: p.pitch, priceCents: p.price * 100, maxGuests: p.seats } });
+      pitchesCreated++;
+    }
+  }
+
   const guests = [];
   for (const [i, name] of guestNames.entries()) {
     guests.push(
@@ -397,10 +489,29 @@ async function main(): Promise<string> {
     const startsAt = at(e.daysFromNow, e.hour);
     const chef = chefs[e.chef];
     const status = e.status ?? "PUBLISHED";
+    // A room dinner came from an open night the chef pitched for and got.
+    let openNightId: string | null = null;
+    if (e.room !== undefined) {
+      const room = ROOMS[e.room];
+      const night = await db.openNight.create({
+        data: {
+          venueId: roomIds[e.room], startsAt, durationMin: 180, minSeats: e.min, maxSeats: Math.min(room.capacity, e.max + 2),
+          venueSharePct: room.deal.sharePct, venueFeeCents: room.deal.feeCents, terms: room.deal.terms, suggestedPriceCents: room.deal.guideCents, crew: e.credits ?? null, status: "TAKEN",
+        },
+      });
+      await db.nightPitch.create({
+        data: { openNightId: night.id, chefId: chefIds[e.chef], title: e.title, pitch: e.description, priceCents: e.price, maxGuests: e.max, status: "APPROVED", decidedAt: new Date(startsAt.getTime() - 30 * DAY) },
+      });
+      openNightId = night.id;
+    }
+    const bar = e.room !== undefined ? ROOMS[e.room].hasBar : e.space ? LUCA_SPACE.hasBar : false;
     const event = await db.event.create({
       data: {
         chefId: chefIds[e.chef],
-        venueId: venueIds[e.chef],
+        venueId: e.room !== undefined ? roomIds[e.room] : e.space ? spaceVenueId : venueIds[e.chef],
+        openNightId,
+        format: e.room !== undefined || e.space ? "ROOM" : "HOME",
+        credits: e.credits ?? null,
         // Most dinners post their menu; a few show the "closer to the date" note.
         menuId: i % 4 === 3 ? null : menuIds[e.chef],
         title: e.title,
@@ -415,9 +526,9 @@ async function main(): Promise<string> {
         goNoGoCheckedAt: status === "COMPLETED" || status === "CANCELLED" ? new Date(startsAt.getTime() - RULES.GO_NO_GO_HOURS * HOUR) : null,
         status,
         mode: "UNSOLD",
-        borough: chef.borough,
-        byob: true,
-        byobNote: "Bring whatever you like to drink; nothing is sold or included.",
+        borough: e.room !== undefined ? ROOMS[e.room].borough : e.space ? LUCA_SPACE.borough : chef.borough,
+        byob: !bar,
+        byobNote: e.drinksNote ?? (bar ? null : "Bring whatever you like to drink; nothing is sold or included."),
         dietaryNotes: e.dietary ?? null,
         photoUrls: e.photos ?? [],
         cancelledAt: status === "CANCELLED" ? new Date(startsAt.getTime() - RULES.GO_NO_GO_HOURS * HOUR) : null,
@@ -545,7 +656,7 @@ async function main(): Promise<string> {
     }
   }
 
-  return `Seeded ${chefs.length} chefs (+3 applicants), ${guests.length} guests, ${events.length} events, ${bookingsCreated} bookings, ${reviewsCreated} reviews.`;
+  return `Seeded ${chefs.length} chefs (+3 applicants), ${guests.length} guests, ${events.length} events, ${ROOMS.length} rooms with ${OPEN_NIGHTS.length} open nights and ${pitchesCreated} pitches waiting, ${bookingsCreated} bookings, ${reviewsCreated} reviews.`;
 }
 
 /** Wipe the demo data and load it again. Also reachable from /api/admin/seed when DEMO_SEED=true. */

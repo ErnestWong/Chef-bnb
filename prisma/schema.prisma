@@ -6,7 +6,10 @@
 // separate select list (see src/lib/select.ts once it exists).
 //
 // Constraints Prisma can't express (CHECKs) live in the migration SQL:
-//   events:   max_guests <= 10, 1 <= min_guests <= max_guests, price_cents >= 0
+//   events:   max_guests <= 10 and byob for HOME dinners (rooms seat what the
+//             venue holds), 1 <= min_guests <= max_guests, price_cents >= 0
+//   venues:   owner_user_id set unless PARTNER_VENUE (a room Covers books)
+//   open_nights / night_pitches: seat ranges, shares and prices in range
 //   bookings: party_size >= 1, amount_cents >= 0
 //   reviews:  rating between 1 and 5
 
@@ -43,8 +46,38 @@ enum ChefStatus {
 }
 
 enum VenueType {
+  /// The chef's own home: a HOME dinner, at most 10 guests, BYOB.
   CHEF_HOME
+  /// A space the chef runs or can use (restaurant, studio, standing pop-up): a ROOM dinner.
+  CHEF_SPACE
+  /// A room Covers has booked with a venue; chefs cook there through open nights. No owner.
   PARTNER_VENUE
+}
+
+/// What guests see on the card. Derived from the venue when the dinner is saved.
+enum EventFormat {
+  HOME
+  ROOM
+}
+
+/// The chef's answer to "Where will you cook?" at onboarding.
+enum HostingPath {
+  HOME
+  OWN_SPACE
+  OPEN_NIGHTS
+}
+
+enum OpenNightStatus {
+  OPEN
+  TAKEN
+  CANCELLED
+}
+
+enum PitchStatus {
+  PENDING
+  APPROVED
+  DECLINED
+  WITHDRAWN
 }
 
 enum EventStatus {
@@ -81,18 +114,18 @@ enum BookingStatus {
 /// One row per person; a user can be both a guest and a chef. Column names are
 /// compatible with the Auth.js Prisma adapter (M2 adds Account/Session tables).
 model User {
-  id            String    @id @default(cuid())
+  id              String    @id @default(cuid())
   /// Optional since phone sign-in: chefs always have one, guests may not.
-  email         String?   @unique
-  emailVerified DateTime? @map("email_verified")
-  name          String?
-  image         String?
+  email           String?   @unique
+  emailVerified   DateTime? @map("email_verified")
+  name            String?
+  image           String?
   /// PRIVATE. E.164 (+12125551234). The sign-in identity for most guests.
   phone           String?   @unique
   phoneVerifiedAt DateTime? @map("phone_verified_at")
-  roles         Role[]    @default([GUEST])
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
+  roles           Role[]    @default([GUEST])
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
 
   chefProfile ChefProfile?
   venues      Venue[]
@@ -108,10 +141,10 @@ model User {
 // ---------- Auth.js tables (shape required by @auth/prisma-adapter) ----------
 
 model Account {
-  userId            String  @map("user_id")
+  userId            String   @map("user_id")
   type              String
   provider          String
-  providerAccountId String  @map("provider_account_id")
+  providerAccountId String   @map("provider_account_id")
   refresh_token     String?
   access_token      String?
   expires_at        Int?
@@ -152,37 +185,41 @@ model VerificationToken {
 }
 
 model ChefProfile {
-  id              String     @id @default(cuid())
-  userId          String     @unique @map("user_id")
-  displayName     String     @map("display_name")
-  slug            String     @unique
+  id              String      @id @default(cuid())
+  userId          String      @unique @map("user_id")
+  displayName     String      @map("display_name")
+  slug            String      @unique
   bio             String
   credentials     String?
   website         String?
   instagram       String?
-  homeBorough     Borough?   @map("home_borough")
-  status          ChefStatus @default(APPLIED)
+  homeBorough     Borough?    @map("home_borough")
+  status          ChefStatus  @default(APPLIED)
   /// PRIVATE
-  foodCertNumber  String?    @map("food_cert_number")
-  insuranceOnFile Boolean    @default(false) @map("insurance_on_file")
-  needsFoh        Boolean    @default(false) @map("needs_foh")
-  needsServers    Boolean    @default(false) @map("needs_servers")
-  needsVenue      Boolean    @default(false) @map("needs_venue")
+  foodCertNumber  String?     @map("food_cert_number")
+  insuranceOnFile Boolean     @default(false) @map("insurance_on_file")
+  needsFoh        Boolean     @default(false) @map("needs_foh")
+  needsServers    Boolean     @default(false) @map("needs_servers")
+  /// Deprecated by hostingPath (kept in sync = OPEN_NIGHTS) until a later migration drops it.
+  needsVenue      Boolean     @default(false) @map("needs_venue")
+  /// "Where will you cook?": at home, in their own space, or on Covers' open nights.
+  hostingPath     HostingPath @default(HOME) @map("hosting_path")
   /// PRIVATE — Venmo/Zelle handle, shown to a guest only after a seat request.
-  paymentHandle   String?    @map("payment_handle")
+  paymentHandle   String?     @map("payment_handle")
   /// PRIVATE — free-text payment instructions shown alongside the handle.
-  paymentNote     String?    @map("payment_note")
-  photoUrls       String[]   @default([]) @map("photo_urls")
+  paymentNote     String?     @map("payment_note")
+  photoUrls       String[]    @default([]) @map("photo_urls")
   /// Admin's approve/reject note.
-  reviewNote      String?    @map("review_note")
-  createdAt       DateTime   @default(now()) @map("created_at")
-  updatedAt       DateTime   @updatedAt @map("updated_at")
+  reviewNote      String?     @map("review_note")
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
 
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   cuisines Cuisine[]
   menus    Menu[]
   events   Event[]
   reviews  Review[]
+  pitches  NightPitch[]
 
   @@index([status])
   @@map("chef_profiles")
@@ -219,8 +256,17 @@ model Menu {
 
 model Venue {
   id           String    @id @default(cuid())
-  ownerUserId  String    @map("owner_user_id")
+  /// The chef who owns it; null for PARTNER_VENUE rooms, which belong to Covers.
+  ownerUserId  String?   @map("owner_user_id")
   type         VenueType @default(CHEF_HOME)
+  /// PRIVATE — the venue's name ("Café on Fulton"), told to chefs and to confirmed guests with the address.
+  name         String?
+  /// For chefs on the open-nights board: "A café after close". Not public.
+  description  String?
+  /// For chefs: burners, ovens, walk-in, what's missing. Not public.
+  kitchenNotes String?   @map("kitchen_notes")
+  /// A licensed bar on site. A ROOM dinner here may use it instead of BYOB.
+  hasBar       Boolean   @default(false) @map("has_bar")
   /// PRIVATE — exact street address, revealed to confirmed guests 48 h before.
   address      String
   neighborhood String
@@ -233,11 +279,70 @@ model Venue {
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
 
-  owner  User    @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
-  events Event[]
+  owner      User?       @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  events     Event[]
+  openNights OpenNight[]
 
   @@index([ownerUserId])
   @@map("venues")
+}
+
+/// A night Covers has booked with a partner venue, waiting for a chef.
+/// Chefs pitch for it; an admin approves one pitch, which creates the dinner.
+model OpenNight {
+  id                  String          @id @default(cuid())
+  venueId             String          @map("venue_id")
+  startsAt            DateTime        @map("starts_at")
+  durationMin         Int             @default(180) @map("duration_min")
+  /// Seat range the venue agreed to; the dinner's min and max must sit inside it.
+  minSeats            Int             @map("min_seats")
+  maxSeats            Int             @map("max_seats")
+  /// The venue's cut of ticket sales, in percent, and any flat fee for the night.
+  venueSharePct       Int             @default(0) @map("venue_share_pct")
+  venueFeeCents       Int             @default(0) @map("venue_fee_cents")
+  /// Anything else the venue asks: "keeps the bar", "out by 11".
+  terms               String?
+  /// A guide price per seat for the chef's estimate. Optional.
+  suggestedPriceCents Int?            @map("suggested_price_cents")
+  /// Credits shown on the dinner page once it's booked: "Hosted by Ana · Table by Rosa". Public.
+  crew                String?
+  status              OpenNightStatus @default(OPEN)
+  createdAt           DateTime        @default(now()) @map("created_at")
+  updatedAt           DateTime        @updatedAt @map("updated_at")
+
+  venue   Venue        @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  pitches NightPitch[]
+  event   Event?
+
+  @@index([status, startsAt])
+  @@index([venueId])
+  @@map("open_nights")
+}
+
+/// A chef's request to cook an open night: the idea, the price, the seats.
+model NightPitch {
+  id           String      @id @default(cuid())
+  openNightId  String      @map("open_night_id")
+  chefId       String      @map("chef_id")
+  title        String
+  /// The menu idea and what the night is like, in the chef's words.
+  pitch        String
+  priceCents   Int         @map("price_cents")
+  /// Seats the chef wants to sell, inside the night's range.
+  maxGuests    Int         @map("max_guests")
+  status       PitchStatus @default(PENDING)
+  /// Admin's note on the decision, sent to the chef.
+  decisionNote String?     @map("decision_note")
+  decidedAt    DateTime?   @map("decided_at")
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+
+  openNight OpenNight   @relation(fields: [openNightId], references: [id], onDelete: Cascade)
+  chef      ChefProfile @relation(fields: [chefId], references: [id], onDelete: Cascade)
+
+  @@unique([openNightId, chefId])
+  @@index([status])
+  @@map("night_pitches")
 }
 
 model Event {
@@ -251,8 +356,14 @@ model Event {
   durationMin         Int           @map("duration_min")
   priceCents          Int           @map("price_cents")
   minGuests           Int           @map("min_guests")
-  /// Hard cap of 10, enforced in form, server and DB.
+  /// HOME dinners: at most 10, enforced in form, server and DB. ROOM dinners: what the venue holds.
   maxGuests           Int           @map("max_guests")
+  /// HOME (a chef's own home) or ROOM (their own space or a Covers-booked room). Public.
+  format              EventFormat   @default(HOME)
+  /// Set when the dinner came from an open night (a Covers-booked room).
+  openNightId         String?       @unique @map("open_night_id")
+  /// Crew credits from the open night: "Hosted by Ana · Table by Rosa". Public.
+  credits             String?
   allowedBookingTypes BookingType[] @map("allowed_booking_types")
   /// Below min confirmed guests at this time → event auto-cancels. Default: starts_at − 72 h.
   goNoGoAt            DateTime      @map("go_no_go_at")
@@ -261,7 +372,7 @@ model Event {
   mode                EventMode     @default(UNSOLD)
   status              EventStatus   @default(DRAFT)
   /// Chef-supplied photos of the dinner (Blob URLs later; seed uses stock URLs). Public.
-  photoUrls   String[]  @default([]) @map("photo_urls")
+  photoUrls           String[]      @default([]) @map("photo_urls")
   /// Denormalized from venue for discovery filters.
   borough             Borough
   byob                Boolean       @default(true)
@@ -273,12 +384,13 @@ model Event {
   createdAt           DateTime      @default(now()) @map("created_at")
   updatedAt           DateTime      @updatedAt @map("updated_at")
 
-  chef     ChefProfile @relation(fields: [chefId], references: [id], onDelete: Cascade)
-  venue    Venue       @relation(fields: [venueId], references: [id])
-  menu     Menu?       @relation(fields: [menuId], references: [id], onDelete: SetNull)
-  cuisines Cuisine[]
-  bookings Booking[]
-  reviews  Review[]
+  chef      ChefProfile @relation(fields: [chefId], references: [id], onDelete: Cascade)
+  venue     Venue       @relation(fields: [venueId], references: [id])
+  menu      Menu?       @relation(fields: [menuId], references: [id], onDelete: SetNull)
+  openNight OpenNight?  @relation(fields: [openNightId], references: [id], onDelete: SetNull)
+  cuisines  Cuisine[]
+  bookings  Booking[]
+  reviews   Review[]
 
   @@index([startsAt, status])
   @@index([borough])

@@ -9,16 +9,18 @@ const ADDRESS = "742 Evergreen Terrace, Apt 3";
 
 const all = () => [
   T.seatRequestedEmail({ ...base, bookingType: "GROUP", partySize: 3, amountCents: 16500, dietaryNotes: "One vegetarian" }),
-  T.bookingConfirmedEmail({ ...base, partySize: 2, amountCents: 11000, neighborhood: "Flushing", crossStreets: "Main St & Roosevelt Ave" }),
+  T.bookingConfirmedEmail({ ...base, partySize: 2, amountCents: 11000, neighborhood: "Flushing", crossStreets: "Main St & Roosevelt Ave", byob: true }),
   T.requestExpiredEmail({ ...base, eventOver: false }),
   T.requestExpiredEmail({ ...base, eventOver: true }),
   T.eventCancelledEmail({ ...base, recipientName: "Ada", recipient: "guest", reason: "Fewer than the minimum confirmed by the cutoff.", cancelledBy: "system", paidCents: 5500 }),
   T.eventCancelledEmail({ ...base, recipientName: "Casa Wong", recipient: "chef", reason: "Fewer than the minimum confirmed by the cutoff.", cancelledBy: "system", bookingsCancelled: 2 }),
-  T.addressRevealEmail({ ...base, partySize: 2, address: ADDRESS, neighborhood: "Flushing", crossStreets: "Main St & Roosevelt Ave", byobNote: null, dietaryNotes: null }),
+  T.addressRevealEmail({ ...base, partySize: 2, venueName: null, address: ADDRESS, neighborhood: "Flushing", crossStreets: "Main St & Roosevelt Ave", byob: true, byobNote: null, dietaryNotes: null }),
   T.reviewRequestEmail(base),
   T.chefApplicationDecidedEmail({ chefName: "Casa Wong", decision: "APPROVED", note: null }),
   T.chefApplicationDecidedEmail({ chefName: "Casa Wong", decision: "REJECTED", note: "Send a sample menu next time." }),
   T.markAttendanceEmail({ ...base, confirmedBookings: 4 }),
+  T.pitchDecidedEmail({ chefName: "Casa Wong", decision: "APPROVED", nightLabel: "Tue, Feb 3 · Bed-Stuy", title: "Lunar New Year at the café", note: null, eventId: "evt_9" }),
+  T.pitchDecidedEmail({ chefName: "Casa Wong", decision: "DECLINED", nightLabel: "Tue, Feb 3 · Bed-Stuy", title: "Lunar New Year at the café", note: "Another chef got this night.", eventId: null }),
 ];
 
 describe("email templates", () => {
@@ -35,7 +37,7 @@ describe("email templates", () => {
   });
 
   it("formats dates in New York time and money in dollars", async () => {
-    const text = await render(T.bookingConfirmedEmail({ ...base, partySize: 2, amountCents: 11000, neighborhood: "Flushing", crossStreets: "Main St & Roosevelt Ave" }).react, { plainText: true });
+    const text = await render(T.bookingConfirmedEmail({ ...base, partySize: 2, amountCents: 11000, neighborhood: "Flushing", crossStreets: "Main St & Roosevelt Ave", byob: true }).react, { plainText: true });
     expect(text).toContain("Sat, Dec 5");
     expect(text).toContain("7:00 PM");
     expect(text).toContain("$110");
@@ -46,6 +48,22 @@ describe("email templates", () => {
     const withAddress = texts.filter((t) => t.includes(ADDRESS));
     expect(withAddress).toHaveLength(1);
     expect(withAddress[0]).toContain("keep the address to your party");
+  });
+
+  it("in a room, names the venue with the address and says the bar is open", async () => {
+    const text = await render(
+      T.addressRevealEmail({ ...base, partySize: 2, venueName: "Café on Fulton", address: ADDRESS, neighborhood: "Bed-Stuy", crossStreets: "Fulton & Nostrand", byob: false, byobNote: null, dietaryNotes: null }).react,
+      { plainText: true },
+    );
+    expect(text).toContain(`Café on Fulton, ${ADDRESS}`);
+    expect(text).toContain("bar is open");
+    expect(text).not.toContain("BYOB");
+  });
+
+  it("sends an approved chef to their draft dinner", async () => {
+    const email = T.pitchDecidedEmail({ chefName: "X", decision: "APPROVED", nightLabel: "Tue, Feb 3 · Bed-Stuy", title: "T", note: null, eventId: "evt_9" });
+    expect(email.subject).toBe("Your night is booked");
+    expect(await render(email.react)).toContain("/chef/events/evt_9/edit");
   });
 
   it("picks the subject by outcome", () => {

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { getDb } from "@/lib/db";
 import { requireRole } from "@/lib/auth/session";
+import { countPendingPitches } from "@/lib/nights/queries";
 import { RunJobsButton } from "@/components/run-jobs-button";
 import { Container } from "@/components/ui";
 
@@ -24,12 +25,14 @@ export default function AdminPage() {
 async function AdminOverview() {
   await requireRole("ADMIN", "/admin");
   const db = getDb();
-  const [pendingChefs, approvedChefs, upcomingEvents, requestedBookings, reviewCount] = await Promise.all([
+  const [pendingChefs, approvedChefs, upcomingEvents, requestedBookings, reviewCount, openNights, pendingPitches] = await Promise.all([
     db.chefProfile.count({ where: { status: "APPLIED" } }),
     db.chefProfile.count({ where: { status: "APPROVED" } }),
     db.event.count({ where: { status: "PUBLISHED", startsAt: { gt: new Date() } } }),
     db.booking.count({ where: { status: "REQUESTED" } }),
     db.review.count({ where: { removedAt: null } }),
+    db.openNight.count({ where: { status: "OPEN", startsAt: { gt: new Date() } } }),
+    countPendingPitches(),
   ]);
 
   const stats = [
@@ -37,11 +40,13 @@ async function AdminOverview() {
     ["Approved chefs", approvedChefs],
     ["Upcoming published dinners", upcomingEvents],
     ["Seat requests awaiting payment", requestedBookings],
+    ["Open nights on the board", openNights],
+    ["Pitches waiting", pendingPitches],
   ] as const;
 
   return (
     <>
-      <dl className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <dl className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3">
         {stats.map(([label, value]) => (
           <div key={label} className="rounded-2xl border border-line bg-surface p-4">
             <dt className="text-xs text-muted">{label}</dt>
@@ -52,6 +57,9 @@ async function AdminOverview() {
       <div className="mt-8 flex flex-wrap gap-3">
         <Link href="/admin/chefs" className="rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-white hover:opacity-90">
           Review chef applications{pendingChefs > 0 ? ` (${pendingChefs})` : ""}
+        </Link>
+        <Link href="/admin/nights" className="rounded-full border border-line px-5 py-2.5 text-sm font-medium hover:border-accent">
+          Open nights{pendingPitches > 0 ? ` (${pendingPitches} pitches)` : ""}
         </Link>
         <Link href="/admin/reviews" className="rounded-full border border-line px-5 py-2.5 text-sm font-medium hover:border-accent">
           Guest reviews ({reviewCount})

@@ -1,12 +1,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { PastEvent, PublicEvent } from "@/lib/queries/events";
+import { FORMAT_LABELS, drinksLabel } from "@/lib/events/formats";
 import { formatEventDateTime, formatEventDay, formatMoney, pluralize } from "@/lib/format";
 import { Badge, Stars } from "./ui";
 
 /**
- * The atom of the brand system: photo, chef and neighborhood in mono, the
- * title in the serif, date and price in mono, seats left, one button.
+ * The atom of the brand system: photo, format, chef and neighborhood in
+ * mono, the title in the serif, date and price in mono, seats left and the
+ * drinks. Guests see two formats: Home and Room.
  */
 export function EventCard({ event }: { event: PublicEvent }) {
   const soldOut = event.seatsLeft === 0;
@@ -22,7 +24,7 @@ export function EventCard({ event }: { event: PublicEvent }) {
       )}
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         <p className="truncate font-mono text-xs uppercase tracking-wide text-muted">
-          {event.chef.displayName} · {event.venue.neighborhood}
+          <span className="text-accent">{FORMAT_LABELS[event.format]}</span> · {event.chef.displayName} · {event.venue.neighborhood}
         </p>
         <h3 className="font-display text-2xl leading-tight group-hover:text-accent">{event.title}</h3>
         <p className="font-mono text-sm">
@@ -36,7 +38,8 @@ export function EventCard({ event }: { event: PublicEvent }) {
             <Badge tone="warn">{event.mode === "BOUGHT_OUT" ? "Bought out" : "Full"}</Badge>
           ) : (
             <span className="font-mono text-xs text-muted">
-              {event.seatsLeft} of {event.maxGuests} left{event.soloFriendly ? " · solo welcome" : ""}
+              {event.seatsLeft} of {event.maxGuests} left · {drinksLabel(event.byob)}
+              {event.soloFriendly ? " · solo welcome" : ""}
             </span>
           )}
         </div>
@@ -60,7 +63,7 @@ export function PastEventCard({ event }: { event: PastEvent }) {
       )}
       <div className="flex flex-1 flex-col gap-2 p-5">
         <p className="font-mono text-xs uppercase tracking-wide text-muted">
-          {event.chef.displayName} · {event.venue.neighborhood} · {formatEventDay(event.startsAt)}
+          {FORMAT_LABELS[event.format]} · {event.chef.displayName} · {event.venue.neighborhood} · {formatEventDay(event.startsAt)}
         </p>
         <h3 className="font-display text-2xl leading-tight group-hover:text-accent">{event.title}</h3>
         <Stars rating={event.averageRating} count={event.reviewCount || undefined} />

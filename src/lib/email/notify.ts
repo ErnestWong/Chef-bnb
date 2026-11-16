@@ -2,6 +2,7 @@ import "server-only";
 import type { Db } from "@/lib/db";
 import type { CancelledBooking } from "@/lib/events/manage";
 import type { Messenger } from "@/lib/messaging";
+import { formatEventDay } from "@/lib/format";
 import * as S from "@/lib/sms/texts";
 import type { EmailInput } from "./mailer";
 import * as T from "./templates";
@@ -72,13 +73,14 @@ export function notifyBookingConfirmed(db: Db, m: Messenger, bookingId: string) 
       select: {
         id: true, partySize: true, amountCents: true,
         guest: { select: CONTACT },
-        event: { select: { title: true, startsAt: true, chef: { select: { displayName: true } }, venue: { select: { neighborhood: true, crossStreets: true } } } },
+        event: { select: { title: true, startsAt: true, byob: true, chef: { select: { displayName: true } }, venue: { select: { neighborhood: true, crossStreets: true } } } },
       },
     });
     if (!b) return false;
     const p = {
       guestName: nameOf(b.guest), chefName: b.event.chef.displayName, bookingId: b.id, eventTitle: b.event.title, startsAt: b.event.startsAt,
       partySize: b.partySize, amountCents: b.amountCents, neighborhood: b.event.venue.neighborhood, crossStreets: b.event.venue.crossStreets,
+      byob: b.event.byob,
     };
     return deliver(m, b.guest, { email: T.bookingConfirmedEmail(p), sms: S.bookingConfirmedText(p) });
   });
@@ -150,10 +152,10 @@ export function notifyAddressReveal(db: Db, m: Messenger, bookingId: string) {
         guest: { select: CONTACT },
         event: {
           select: {
-            title: true, startsAt: true, byobNote: true,
+            title: true, startsAt: true, byob: true, byobNote: true,
             chef: { select: { displayName: true } },
-            // PRIVATE: address is selected here only because this booking is confirmed and inside the reveal window.
-            venue: { select: { address: true, neighborhood: true, crossStreets: true } },
+            // PRIVATE: address (and a room's name) are selected here only because this booking is confirmed and inside the reveal window.
+            venue: { select: { name: true, address: true, neighborhood: true, crossStreets: true } },
           },
         },
       },
@@ -161,8 +163,8 @@ export function notifyAddressReveal(db: Db, m: Messenger, bookingId: string) {
     if (!b) return false;
     const p = {
       guestName: nameOf(b.guest), chefName: b.event.chef.displayName, bookingId: b.id, eventTitle: b.event.title, startsAt: b.event.startsAt,
-      partySize: b.partySize, address: b.event.venue.address, neighborhood: b.event.venue.neighborhood, crossStreets: b.event.venue.crossStreets,
-      byobNote: b.event.byobNote, dietaryNotes: b.dietaryNotes,
+      partySize: b.partySize, venueName: b.event.venue.name, address: b.event.venue.address, neighborhood: b.event.venue.neighborhood, crossStreets: b.event.venue.crossStreets,
+      byob: b.event.byob, byobNote: b.event.byobNote, dietaryNotes: b.dietaryNotes,
     };
     return deliver(m, b.guest, { email: T.addressRevealEmail(p), sms: S.addressRevealText(p) });
   });
@@ -191,6 +193,30 @@ export function notifyChefDecision(db: Db, m: Messenger, profileId: string) {
     if (!p || (p.status !== "APPROVED" && p.status !== "REJECTED")) return false;
     const props = { chefName: p.displayName, decision: p.status, note: p.reviewNote };
     return deliver(m, p.user, { email: T.chefApplicationDecidedEmail(props), sms: S.chefApplicationDecidedText(props) }, "email");
+  });
+}
+
+/** To the chef: an admin approved or declined their pitch for an open night. */
+export function notifyPitchDecided(db: Db, m: Messenger, pitchId: string) {
+  return attempt(`pitch decided ${pitchId}`, async () => {
+    const pitch = await db.nightPitch.findUnique({
+      where: { id: pitchId },
+      select: {
+        status: true, title: true, decisionNote: true,
+        chef: { select: { displayName: true, user: { select: CONTACT } } },
+        openNight: { select: { startsAt: true, venue: { select: { neighborhood: true } }, event: { select: { id: true } } } },
+      },
+    });
+    if (!pitch || (pitch.status !== "APPROVED" && pitch.status !== "DECLINED")) return false;
+    const props = {
+      chefName: pitch.chef.displayName,
+      decision: pitch.status,
+      nightLabel: `${formatEventDay(pitch.openNight.startsAt)} · ${pitch.openNight.venue.neighborhood}`,
+      title: pitch.title,
+      note: pitch.decisionNote,
+      eventId: pitch.status === "APPROVED" ? pitch.openNight.event?.id ?? null : null,
+    };
+    return deliver(m, pitch.chef.user, { email: T.pitchDecidedEmail(props), sms: S.pitchDecidedText(props) }, "email");
   });
 }
 

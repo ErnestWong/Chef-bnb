@@ -7,6 +7,7 @@ import { Badge, Container } from "@/components/ui";
 import { requireRole } from "@/lib/auth/session";
 import { formatPhone } from "@/lib/auth/phone";
 import { getDb } from "@/lib/db";
+import { HOSTING_PATH_LABELS } from "@/lib/chefs/apply";
 import { BOROUGH_LABELS, formatEventDateTime } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Chef application" };
@@ -39,8 +40,8 @@ async function Application({ params }: { params: PageProps<"/admin/chefs/[id]">[
     ["Website", p.website],
     ["Instagram", p.instagram ? `@${p.instagram}` : null],
     ["Home borough", p.homeBorough ? BOROUGH_LABELS[p.homeBorough] : null],
-    ["Hosting", p.needsVenue ? "Needs a venue" : "Own home"],
-    ["Wants help", [p.needsFoh && "front of house", p.needsServers && "servers"].filter(Boolean).join(", ") || "No"],
+    ["Where they'd cook", HOSTING_PATH_LABELS[p.hostingPath]],
+    ["Wants help", [p.needsFoh && "a host at the door", p.needsServers && "servers or extra hands"].filter(Boolean).join(", ") || "No"],
     ["Payment handle", p.paymentHandle],
     ["Payment note", p.paymentNote],
     ["Insurance on file", p.insuranceOnFile ? "Yes" : "No"],

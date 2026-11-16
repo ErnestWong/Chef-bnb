@@ -12,6 +12,8 @@ export type BookingConfirmedProps = {
   amountCents: number;
   neighborhood: string;
   crossStreets: string;
+  /** False when the venue's licensed bar is open instead. */
+  byob: boolean;
 };
 
 /** To the guest when the chef marks their booking paid. */
@@ -30,7 +32,10 @@ export function bookingConfirmedEmail(p: BookingConfirmedProps) {
             ["Paid", formatMoney(p.amountCents)],
           ]}
         />
-        <P>The exact address arrives by email {RULES.ADDRESS_REVEAL_HOURS} hours before the dinner. It&apos;s BYOB, so bring whatever you&apos;d like to drink.</P>
+        <P>
+          The exact address arrives {RULES.ADDRESS_REVEAL_HOURS} hours before the dinner.{" "}
+          {p.byob ? <>It&apos;s BYOB, so bring whatever you&apos;d like to drink.</> : <>The venue&apos;s bar is open; drinks aren&apos;t part of your ticket.</>}
+        </P>
       </EmailLayout>
     ),
   };

@@ -7,14 +7,14 @@ import { RULES } from "@/lib/bookings/rules";
  */
 export const HOUSE_RULES = [
   {
-    id: "byob",
-    title: "BYOB, always",
-    body: "Chefs never sell alcohol or fold it into the ticket price. Bring what you'd like to drink.",
+    id: "table",
+    title: "One table, one seating",
+    body: `Everyone sits at one table and starts together, and the chef comes out to the room. A dinner at a chef's home seats at most ${RULES.MAX_HOME_GUESTS} guests; a room seats what the venue holds. Solo seats, groups of up to ${RULES.GROUP_CAP}, or a buyout of the whole table.`,
   },
   {
-    id: "size",
-    title: `${RULES.MAX_GUESTS} guests at most`,
-    body: `Every dinner seats at most ${RULES.MAX_GUESTS} guests. Solo seats, groups of up to ${RULES.GROUP_CAP}, or a buyout of the whole table.`,
+    id: "byob",
+    title: "Chefs never sell drinks",
+    body: "Alcohol is never sold by the chef or folded into the ticket price. At a chef's home it's BYOB. In a room, the listing says whether it's BYOB or the venue's own licensed bar is open.",
   },
   {
     id: "together",
@@ -39,4 +39,4 @@ export const HOUSE_RULES = [
 ] as const;
 
 /** One-line version for the point of booking. */
-export const HOUSE_RULES_SHORT = `BYOB, ${RULES.MAX_GUESTS} guests at most, and you pay the chef directly.`;
+export const HOUSE_RULES_SHORT = `One table, BYOB unless the venue's bar is open, and you pay the chef directly.`;

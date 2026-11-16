@@ -17,7 +17,8 @@ import { rateLimitMessage } from "@/lib/security/rate-limit";
 const requestSchema = z.object({
   eventId: z.string().min(1),
   type: z.enum(["SEAT", "GROUP", "BUYOUT"]),
-  partySize: z.coerce.number().int().min(1).max(RULES.MAX_GUESTS),
+  // The event's own seats bound the party (decideSeatRequest); this only rejects nonsense.
+  partySize: z.coerce.number().int().min(1).max(RULES.MAX_VENUE_CAPACITY),
   dietaryNotes: z.string().trim().max(500).optional(),
 });
 

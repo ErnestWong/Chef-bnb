@@ -2,8 +2,13 @@ import type { BookingType, EventMode, EventStatus } from "@/generated/prisma/enu
 
 /** Product defaults from the strategy. Checklist item 8 may change these. */
 export const RULES = {
-  /** Hard cap per event; also a DB CHECK constraint. */
-  MAX_GUESTS: 10,
+  /** HOME dinners (a chef's own home) seat at most this many; also a DB CHECK constraint. */
+  MAX_HOME_GUESTS: 10,
+  /**
+   * Largest venue capacity or party the forms accept. A typo guard, not a cap:
+   * a ROOM dinner seats what its venue holds (decided 2026-11-16).
+   */
+  MAX_VENUE_CAPACITY: 500,
   /** Largest non-buyout group. */
   GROUP_CAP: 5,
   /** Unpaid requests expire after this long. */

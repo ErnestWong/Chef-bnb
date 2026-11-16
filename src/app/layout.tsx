@@ -17,7 +17,7 @@ const newsreader = Newsreader({
 export const metadata: Metadata = {
   title: { default: "Covers", template: "%s · Covers" },
   description:
-    "Someone's cooking tonight. Your seat's covered. A small dinner party in a chef's home: come alone or with a few friends, eat what a real chef cooks, and meet the rest of the table.",
+    "Someone's cooking tonight. Your seat's covered. A chef's dinner party at one long table: come alone or with a few friends, eat what a real chef cooks, and meet the rest of the table.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

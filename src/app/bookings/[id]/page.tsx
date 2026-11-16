@@ -96,7 +96,10 @@ async function BookingDetails({ params, searchParams }: { params: PageProps<"/bo
       {b.status === "CONFIRMED" && upcoming && (
         <section className="mt-6 rounded-2xl border border-line p-6 text-sm">
           <h2 className="font-display text-2xl">You&apos;re in</h2>
-          <p className="mt-2">Your payment is confirmed. The exact address arrives by text {RULES.ADDRESS_REVEAL_HOURS} hours before the dinner. It&apos;s BYOB — bring something to drink.</p>
+          <p className="mt-2">
+            Your payment is confirmed. The exact address arrives by text {RULES.ADDRESS_REVEAL_HOURS} hours before the dinner.{" "}
+            {b.event.byob ? <>It&apos;s BYOB: bring something to drink.</> : <>The venue&apos;s bar is open; drinks aren&apos;t part of your ticket.</>}
+          </p>
         </section>
       )}
 

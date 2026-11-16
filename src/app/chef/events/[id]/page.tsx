@@ -8,7 +8,9 @@ import { BOOKING_TYPE_LABELS, BookingStatusBadge } from "@/components/booking-st
 import { Badge, Container } from "@/components/ui";
 import { requireRole } from "@/lib/auth/session";
 import { contactLine, displayName } from "@/lib/contact";
+import { FORMAT_LABELS, drinksLabel } from "@/lib/events/formats";
 import { formatEventDateTime, formatMoney, pluralize } from "@/lib/format";
+import { describeVenueTake } from "@/lib/nights/terms";
 import { confirmedSeats, getEventForChef, heldSeats } from "@/lib/queries/bookings";
 
 export const metadata: Metadata = { title: "Guest list" };
@@ -63,6 +65,8 @@ async function GuestList({ params }: { params: PageProps<"/chef/events/[id]">["p
       <h1 className="font-display mt-3 text-4xl">{event.title}</h1>
       <p className="mt-2 text-muted">{formatEventDateTime(event.startsAt)} · {formatMoney(event.priceCents)} / seat</p>
       <div className="mt-3 flex flex-wrap gap-1.5">
+        <Badge tone="accent">{FORMAT_LABELS[event.format]}</Badge>
+        <Badge>{drinksLabel(event.byob)}</Badge>
         <Badge>{event.status.toLowerCase()}</Badge>
         <Badge>{event.mode.toLowerCase().replace("_", " ")}</Badge>
         <Badge tone={confirmed >= event.minGuests ? "accent" : "warn"}>
@@ -78,6 +82,17 @@ async function GuestList({ params }: { params: PageProps<"/chef/events/[id]">["p
           {event.status === "PUBLISHED" && <EventStatusButton eventId={event.id} to="DRAFT" label="Unpublish" />}
           <EventStatusButton eventId={event.id} to="CANCELLED" label="Cancel dinner" variant="danger" withReason confirmText="Cancel this dinner? Every active booking is cancelled and you refund anyone who paid." />
         </div>
+      )}
+
+      {event.venue.type === "PARTNER_VENUE" && (
+        <section className="mt-8 rounded-2xl border border-line bg-surface p-5 text-sm">
+          <p className="font-mono text-xs uppercase tracking-wide text-muted">Room · open night</p>
+          <p className="font-display mt-1 text-xl">{event.venue.name ?? "A room we've booked"}</p>
+          <p className="mt-1">{event.venue.address} ({event.venue.neighborhood}, near {event.venue.crossStreets})</p>
+          {event.openNight && <p className="mt-2 font-mono text-xs text-muted">Venue takes {describeVenueTake(event.openNight)}</p>}
+          {event.credits && <p className="mt-1 text-muted">On the night: {event.credits}</p>}
+          {event.status === "DRAFT" && <p className="mt-3 rounded-md bg-accent-soft px-3 py-2">Your pitch was approved. Check the menu, price and seats, then publish.</p>}
+        </section>
       )}
 
       {dietary.length > 0 && (

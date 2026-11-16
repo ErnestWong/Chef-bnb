@@ -21,7 +21,7 @@ const SECTIONS: LegalSection[] = [
     body: (
       <>
         <p>
-          {SITE_NAME} is a website where independent chefs list ticketed dinner parties in New York City and guests book seats at them. We run the listings, the booking flow and the emails. The chef hosts the dinner, cooks the food and takes the payment.
+          {SITE_NAME} is a website where independent chefs list ticketed dinner parties in New York City and guests book seats at them. We run the listings, the booking flow and the emails, and for open nights we arrange the room with a venue. The chef hosts the dinner, cooks the food and takes the payment.
         </p>
         <p>
           We are not the host, the cook, the restaurant or the seller of any meal. When you book a seat you are making an arrangement with the chef; when you host, you are making one with your guests. These terms cover how the site works and what we expect from everyone using it. By using the site you agree to them.
@@ -50,7 +50,7 @@ const SECTIONS: LegalSection[] = [
             <span className="font-medium">{r.title}.</span> {r.body}
           </>
         ))} />
-        <p>Chefs may add their own house rules on a listing, such as shoes off or no photos of the apartment. Those are part of the deal too.</p>
+        <p>Chefs may add their own house rules on a listing, such as shoes off or no photos of the apartment. In a room we&apos;ve booked, the venue&apos;s rules apply too. Those are part of the deal.</p>
       </>
     ),
   },
@@ -99,7 +99,8 @@ const SECTIONS: LegalSection[] = [
           "You honor confirmed bookings, and if you have to cancel, you refund your guests in full and tell them promptly.",
           "You mark bookings paid, attended or no-show truthfully, since those records drive confirmations, address reveal and reviews.",
           "You keep guests' names, dietary notes and contact details private and use them only to host the dinner.",
-          "You never sell alcohol or include it in the price, and you never seat more than the guest cap.",
+          "You never sell alcohol or include it in the price (a venue's licensed bar is the venue's, not yours), and you never seat more than your listing says: at most ten guests at home.",
+          "If you cook on an open night in a room we've booked, you follow the venue's terms shown on that night, leave the room as you found it, and the venue's share of ticket sales is settled after the night.",
         ]} />
         <p>We review every chef application by hand, but that review is not an inspection or a license. We can pause or remove a listing or a chef account at any time, and we will tell you why.</p>
       </>
@@ -148,7 +149,7 @@ export default function TermsPage() {
       sibling={{ href: "/privacy", label: "privacy policy" }}
       intro={
         <p>
-          The short version: chefs host, guests pay chefs directly, every dinner is BYOB with at most {RULES.MAX_GUESTS} guests, and {SITE_NAME} runs the listings and bookings in between. The long version is below, in plain language.
+          The short version: chefs host, guests pay chefs directly, every dinner is one table and one seating, dinners at a chef&apos;s home are BYOB with at most {RULES.MAX_HOME_GUESTS} guests, and {SITE_NAME} runs the listings and bookings in between. The long version is below, in plain language.
         </p>
       }
       sections={SECTIONS}

@@ -5,4 +5,4 @@ export const SITE_NAME = "Covers";
 export const SUPPORT_EMAIL = process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() || null;
 
 /** Date shown at the top of the terms and privacy pages. Bump when their text changes. */
-export const POLICIES_UPDATED = "2026-11-14";
+export const POLICIES_UPDATED = "2026-11-16";
