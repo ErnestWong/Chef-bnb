@@ -13,6 +13,22 @@ export function normalizePhone(input: string, country: CountryCode = DEFAULT_COU
   return parsed.number;
 }
 
+/**
+ * Countries a login code may be texted to. Covers is a New York product, and
+ * SMS pumping fraud (bots requesting codes to premium or foreign numbers that
+ * pay the attacker per text) lives almost entirely outside them. Other +1
+ * countries (Dominican Republic, Jamaica, ...) share the calling code, so the
+ * check is by country, not by "+1".
+ */
+export const SIGN_IN_COUNTRIES: readonly CountryCode[] = ["US", "CA"];
+
+/** True when a normalized number may receive a login code: US or Canadian, valid, not a premium-rate 900 number. */
+export function isSignInPhone(e164: string): boolean {
+  const parsed = parsePhoneNumberFromString(e164);
+  if (!parsed || !parsed.isValid() || !parsed.country || !SIGN_IN_COUNTRIES.includes(parsed.country)) return false;
+  return !parsed.nationalNumber.startsWith("900");
+}
+
 /** "+12125551234" → "(212) 555-1234" for US numbers, international format elsewhere. */
 export function formatPhone(e164: string): string {
   const parsed = parsePhoneNumberFromString(e164);

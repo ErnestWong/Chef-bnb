@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatPhone, maskPhone, normalizeCode, normalizePhone, parseAdminPhones } from "./phone";
+import { formatPhone, isSignInPhone, maskPhone, normalizeCode, normalizePhone, parseAdminPhones } from "./phone";
 
 describe("normalizePhone", () => {
   it("accepts the ways people type a US number", () => {
@@ -13,6 +13,19 @@ describe("normalizePhone", () => {
   });
   it("rejects things that aren't numbers", () => {
     for (const input of ["", "hello", "123", "212555", "+1"]) expect(normalizePhone(input)).toBeNull();
+  });
+});
+
+describe("isSignInPhone", () => {
+  it("texts US and Canadian numbers", () => {
+    expect(isSignInPhone("+12125551234")).toBe(true);
+    expect(isSignInPhone("+16507990167")).toBe(true);
+    expect(isSignInPhone("+14165550123")).toBe(true);
+  });
+  it("refuses other countries, including those that share +1, and premium-rate 900 numbers", () => {
+    for (const n of ["+447700900123", "+33612345678", "+2348012345678", "+18095550123", "+18765550123", "+19005550123", "not a number"]) {
+      expect(isSignInPhone(n), n).toBe(false);
+    }
   });
 });
 

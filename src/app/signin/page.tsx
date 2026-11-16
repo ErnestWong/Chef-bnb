@@ -15,6 +15,8 @@ export const metadata: Metadata = { title: "Sign in" };
 
 const ERRORS: Record<string, string> = {
   invalid_phone: "That doesn't look like a mobile number. Try again with the area code.",
+  unsupported_phone: "Sign-in works with US and Canadian mobile numbers for now.",
+  sign_in_busy: "Sign-in texts are paused for a little while. Try again in an hour.",
   invalid_code: "Enter the six digits from the text.",
   wrong_code: "That code didn't match. Check the text and try again, or ask for a new one.",
   code_expired: "That code has expired. Ask for a new one.",

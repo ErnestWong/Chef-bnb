@@ -13,6 +13,7 @@ import { notifyBookingConfirmed, notifySeatRequested } from "@/lib/email/notify"
 import { revealAddressForBooking } from "@/lib/jobs/reveal-addresses";
 import { LIMITS } from "@/lib/security/limits";
 import { rateLimitMessage } from "@/lib/security/rate-limit";
+import { safeRedirectPath } from "@/lib/security/redirect";
 
 const requestSchema = z.object({
   eventId: z.string().min(1),
@@ -93,8 +94,8 @@ export async function transitionBookingAction(_prev: ActionResult | null, formDa
     await notifyBookingConfirmed(db, messenger, parsed.data.bookingId);
     await revealAddressForBooking(db, messenger, parsed.data.bookingId);
   }
-  const returnTo = parsed.data.returnTo;
-  if (returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//")) {
+  const returnTo = safeRedirectPath(parsed.data.returnTo);
+  if (returnTo) {
     revalidatePath(returnTo);
     redirect(returnTo);
   }

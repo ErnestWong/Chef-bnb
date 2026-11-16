@@ -20,7 +20,7 @@ export function PhoneField({ error }: { error?: string }) {
         aria-invalid={error ? true : undefined}
         className={`${field} tracking-wide`}
       />
-      <span className="text-xs text-muted">US numbers as-is; add the country code for anywhere else.</span>
+      <span className="text-xs text-muted">A US or Canadian mobile number. We text you a six-digit code.</span>
     </label>
   );
 }

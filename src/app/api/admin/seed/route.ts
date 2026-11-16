@@ -18,6 +18,13 @@ export async function POST(request: Request) {
   if (!isCronAuthorized(request.headers.get("authorization"), process.env.CRON_SECRET)) {
     return Response.json({ error: "Unauthorized" }, { status: 401, headers });
   }
+  // The seed deletes every chef profile and dinner. Once a real chef exists, refuse, flag or no flag.
+  const realChefs = await getDb().chefProfile.count({
+    where: { user: { OR: [{ email: null }, { NOT: { email: { endsWith: "@example.test" } } }] } },
+  });
+  if (realChefs > 0) {
+    return Response.json({ error: `Refusing to seed: ${realChefs} real chef profile(s) exist. Turn DEMO_SEED off.` }, { status: 409, headers });
+  }
   const summary = await seedDemo(getDb());
   return Response.json({ ok: true, summary }, { headers });
 }

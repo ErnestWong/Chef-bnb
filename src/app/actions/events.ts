@@ -63,6 +63,8 @@ export async function setEventStatusAction(_prev: FormResult | null, formData: F
   const user = await requireRole("CHEF", "/chef");
   const parsed = statusSchema.safeParse({ eventId: formData.get("eventId"), to: formData.get("to"), reason: formData.get("reason") || undefined });
   if (!parsed.success) return { ok: false, error: "Invalid request." };
+  const limited = await rateLimitMessage(getDb(), `event:user:${user.id}`, LIMITS.eventSavesPerChef);
+  if (limited) return { ok: false, error: limited };
   try {
     const { cancelledBookings } = await setEventStatus(getDb(), user.id, parsed.data.eventId, parsed.data.to, parsed.data.reason);
     if (parsed.data.to === "CANCELLED") {

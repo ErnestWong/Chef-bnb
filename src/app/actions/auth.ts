@@ -6,19 +6,19 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { signIn, signOut, updateSession } from "@/auth";
 import { DEV_PROVIDER_ID } from "@/lib/auth/dev-login";
-import { normalizeCode, normalizePhone } from "@/lib/auth/phone";
+import { isSignInPhone, normalizeCode, normalizePhone } from "@/lib/auth/phone";
 import { PENDING_PHONE_COOKIE, PENDING_PHONE_MAX_AGE_SECONDS, PHONE_PROVIDER_ID } from "@/lib/auth/phone-provider";
 import { requireUser } from "@/lib/auth/session";
 import { getDb } from "@/lib/db";
 import { LIMITS } from "@/lib/security/limits";
 import { RateLimitError, enforceRateLimit, rateLimitMessage } from "@/lib/security/rate-limit";
+import { safeRedirectPath } from "@/lib/security/redirect";
 import { clientIp } from "@/lib/security/request";
 import { getVerifier, isPhoneSignInEnabled } from "@/lib/sms/verify";
 
-/** Only allow same-origin relative paths as post-sign-in destinations. */
+/** Only allow paths on this site as post-sign-in destinations (see safeRedirectPath). */
 function safeCallbackUrl(url: string | undefined): string {
-  if (!url || !url.startsWith("/") || url.startsWith("//")) return "/account";
-  return url;
+  return safeRedirectPath(url, "/account");
 }
 
 function signInUrl(params: Record<string, string | undefined>): string {
@@ -36,13 +36,27 @@ export async function startPhoneSignIn(formData: FormData): Promise<void> {
   if (!isPhoneSignInEnabled()) redirect(signInUrl({ error: "phone_unavailable", callbackUrl }));
   const phone = normalizePhone(String(formData.get("phone") ?? ""));
   if (!phone) redirect(signInUrl({ error: "invalid_phone", callbackUrl }));
+  if (!isSignInPhone(phone)) redirect(signInUrl({ error: "unsupported_phone", callbackUrl }));
 
   const db = getDb();
   try {
-    await enforceRateLimit(db, `signin:ip:${await clientIp()}`, LIMITS.signInPerIp);
+    // Per-IP and per-number first, so one source can't spend the site-wide budget below.
+    const ip = await clientIp();
+    await enforceRateLimit(db, `signin:ip:${ip}`, LIMITS.signInPerIp);
+    await enforceRateLimit(db, `code:ip:${ip}`, LIMITS.codesPerIp);
     await enforceRateLimit(db, `code:phone:${phone}`, LIMITS.codesPerPhone);
   } catch (err) {
     if (err instanceof RateLimitError) redirect(signInUrl({ error: "rate_limited", callbackUrl }));
+    throw err;
+  }
+  try {
+    await enforceRateLimit(db, "code:global:hour", LIMITS.codesGlobalPerHour);
+    await enforceRateLimit(db, "code:global:day", LIMITS.codesGlobalPerDay);
+  } catch (err) {
+    if (err instanceof RateLimitError) {
+      console.error("[auth] login texts paused: the site-wide cap was reached; check for SMS abuse");
+      redirect(signInUrl({ error: "sign_in_busy", callbackUrl }));
+    }
     throw err;
   }
 
@@ -68,14 +82,8 @@ export async function verifyPhoneSignIn(formData: FormData): Promise<void> {
   const code = normalizeCode(String(formData.get("code") ?? ""));
   if (!code) redirect(signInUrl({ step: "code", error: "invalid_code", callbackUrl }));
 
-  const db = getDb();
-  try {
-    await enforceRateLimit(db, `check:phone:${phone}`, LIMITS.codeChecksPerPhone);
-  } catch (err) {
-    if (err instanceof RateLimitError) redirect(signInUrl({ error: "rate_limited", callbackUrl }));
-    throw err;
-  }
-
+  // The per-number check limit lives in the phone provider's authorize(), so it
+  // also covers code checks posted straight to /api/auth/callback/phone.
   try {
     await signIn(PHONE_PROVIDER_ID, { phone, code, redirectTo: callbackUrl });
   } catch (err) {
